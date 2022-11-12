@@ -78,7 +78,7 @@ def __generate_random_notes():
     for i in range(32):
         if random.random() > 0.3:
             rVelocity = int(random.uniform(30.0,100.0))
-            rNote = int(random.uniform(12.0,64.0) // 1)
+            rNote = int(random.uniform(21.0,83.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
