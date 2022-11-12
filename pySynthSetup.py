@@ -19,10 +19,38 @@ noteDict = {9:"A",
             7:"A",
             8:"Ab"}
 
+majorKey = [0,2,4,5,7,9,11]
+minorKey = [0,2,3,5,7,8,10]
+
 def midi2note(msg):
     val = msg.note
     note = noteDict[val%12]+str(val//12)
     return note
+
+def quantize2key(sequence):
+    #quantized = False
+    key_center_found = False
+    key_center = 0
+    while not key_center_found:
+        if not sequence[key_center].velocity == 0:
+            key_center = sequence[key_center].note%12
+            key_center_found = True
+        else:
+            key_center += 1
+    print("Key Centre is",noteDict[key_center])
+    for each in sequence:
+        if sequence[key_center].velocity == 0:
+            continue
+        quantized = False
+        while not quantized:
+            if not (key_center + (each.note%12)) in majorKey:
+                each.note += 1
+                print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+            else:
+                quantized = True
+
+
+
 
 def msg2dict(msg):
     result = dict()
@@ -70,6 +98,7 @@ def main():
     #output = mido.open_output('Nord Stage 3 MIDI Input')
     player.play_wave(synth.generate_chord(chord,1))
     sequence = __generate_random_notes()
+    quantize2key(sequence)
     for msg in sequence:
         #output.send(msg)
         if msg.velocity == 0:
