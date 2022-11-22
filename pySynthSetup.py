@@ -19,16 +19,36 @@ noteDict = {9:"A",
             7:"A",
             8:"Ab"}
 
-majorKey = [0,2,4,5,7,9,11]
-minorKey = [0,2,3,5,7,8,10]
+major = [0,2,4,5,7,9,11]
+minor = [0,2,3,5,7,8,10]
+dorian   = [0,2,3,5,7,9,10]
+phrygian = [0,1,3,5,7,8,10]
+lydian   = [0,2,4,6,7,9,11]
+mix      = [0,2,4,5,7,9,11]
+aeolian  = [0,2,3,5,7,8,10]
+locrian  = [0,1,3,5,6,8,10]
+
+scaleDict = {0:major,
+            1:dorian,
+            2:phrygian,
+            3:lydian,
+            4:mix,
+            5:aeolian,
+            6:locrian,
+            7:minor}
+            
+intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
+    4:'major',5:'perfect',6:'augmented',7:'perfect',8:'minor',
+    9:'major',10:'minor',11:'major'}
+intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
 def midi2note(msg):
     val = msg.note
     note = noteDict[val%12]+str(val//12)
     return note
 
-def quantize2key(sequence):
-    #quantized = False
+def quantize2key(sequence,scale):
+    quantized = False
     key_center_found = False
     key_center = 0
     while not key_center_found:
@@ -39,17 +59,17 @@ def quantize2key(sequence):
             key_center += 1
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
-        if sequence[key_center].velocity == 0:
+        if each.velocity == 0:
             continue
         quantized = False
         while not quantized:
-            if not (key_center + (each.note%12)) in majorKey:
+            print(midi2note(each))
+            if not (key_center + (each.note%12)) in scale:
                 each.note += 1
-                print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+                #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+                print(midi2note(each))
             else:
                 quantized = True
-
-
 
 
 def msg2dict(msg):
@@ -78,7 +98,7 @@ def __generate_random_notes():
     for i in range(32):
         if random.random() > 0.3:
             rVelocity = int(random.uniform(30.0,100.0))
-            rNote = int(random.uniform(21.0,83.0) // 1)
+            rNote = int(random.uniform(33.0,71.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
@@ -86,7 +106,53 @@ def __generate_random_notes():
         sequence.append(msg)
     return sequence
 
+def harmonize(sequence,key,scale):
+    stepsCount = 0
+    step = 0
+    for msg in sequence:
+        if step == 0 and msg.velocity == 0:
+            chord = [str(noteDict[key]+3),str(noteDict[(key+5)%12]+3)]
+            step += 1
+            stepsCount += 1
+            continue
+        if step == 0:
+            chord = [msg.note, msg.note +5] 
+        elif step == 4:
+            step = 0
+            stepsCount += 1
 
+
+def score(sequence):
+    noteA = int
+    noteB = int
+    cost = 0
+    for i in range(len(sequence)-2):
+        noteA = sequence[i].note % 12
+        noteB = sequence[i+1].note % 12
+        interval = (noteA - noteB)
+        if interval < 0:
+            interval = 12 + interval
+        print(intervalDict[interval])
+        cost += intervalCost[interval]
+    print('cost', cost)
+
+def mutate(sequence):
+    for each in sequence:
+        if random.random() > 0.75:
+            scale = int(random.uniform(0.0,8.0) // 1)
+            quantize2key(sequence,scaleDict[scale])
+
+
+def create_selection_of_sequences():
+    array = ['','','','','','']
+    for i in range(3):
+        array[i] = __generate_random_notes()
+        quantize2key(array[i],major)
+        mutate(array[i])
+    return array
+
+def evolve(sequence):
+    pass
 
 def main():
     player = Player()
@@ -97,15 +163,30 @@ def main():
     chord = ["C3", "E3", "G3"]
     #output = mido.open_output('Nord Stage 3 MIDI Input')
     player.play_wave(synth.generate_chord(chord,1))
-    sequence = __generate_random_notes()
-    quantize2key(sequence)
-    for msg in sequence:
-        #output.send(msg)
-        if msg.velocity == 0:
-            time.sleep(msg.time/100)
+    array = create_selection_of_sequences()
+    for sequence in array:
+        score(sequence)
+        for msg in sequence:
+            #output.send(msg)
+            if msg.velocity == 0:
+                time.sleep(msg.time/120)
+            else:
+                player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
+            #time.sleep(msg.time/2400)
+        time.sleep(1)
+        player.play_wave(synth.generate_chord(chord,1))
+
+def selectSequence(array):
+    while True:
+        choice = input("Choose the sequence you want to pass to the next level choosing 0 - " + str(len(array)))
+        if choice.isdigit:
+            if len(array) >= choice:
+                evolve(array)
+                break
         else:
-            player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/100)))
-        time.sleep(msg.time/1000)
+            print("invalid choice")
+        
+    
 
 def test():
     print(mido.get_output_names())
