@@ -144,15 +144,22 @@ def mutate(sequence):
 
 
 def create_selection_of_sequences():
-    array = ['','','','','','']
+    array = ['','','']
     for i in range(3):
         array[i] = __generate_random_notes()
         quantize2key(array[i],major)
         mutate(array[i])
     return array
 
-def evolve(sequence):
-    pass
+def evolve(sequences):
+    sequenceA, sequenceB = sequences
+    split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
+    childAB = []
+    for i in range(split):
+        childAB.append(sequenceA[i])
+    for i in range(split,len(sequenceB)):
+        childAB.append(sequenceB[i])
+    return childAB
 
 def main():
     player = Player()
@@ -175,14 +182,31 @@ def main():
             #time.sleep(msg.time/2400)
         time.sleep(1)
         player.play_wave(synth.generate_chord(chord,1))
+    for msg in selectSequence(array):
+        if msg.velocity == 0:
+                time.sleep(msg.time/120)
+        else:
+            player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
+            #time.sleep(msg.time/2400)
+    time.sleep(1)
+    player.play_wave(synth.generate_chord(chord,1))
+
 
 def selectSequence(array):
+    sequenceA = False
     while True:
-        choice = input("Choose the sequence you want to pass to the next level choosing 0 - " + str(len(array)))
+        choice = input("Choose the sequence you want to pass to the next level choosing 1 - " + str(len(array)))
         if choice.isdigit:
-            if len(array) >= choice:
-                evolve(array)
-                break
+            choice = int(choice) - 1
+            if len(array) > choice:
+                if not sequenceA:
+                    sequenceA = array[choice]
+                    array.pop(choice)
+                    continue
+                else:
+                    sequenceB = array[choice]
+                    sequences = (sequenceA,sequenceB)
+                    return evolve(sequences)
         else:
             print("invalid choice")
         
