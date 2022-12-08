@@ -47,7 +47,7 @@ def midi2note(msg):
     note = noteDict[val%12]+str(val//12)
     return note
 
-def quantize2key(sequence,scale):
+def quantize2key_(sequence,scale):
     quantized = False
     key_center_found = False
     key_center = 0
@@ -57,6 +57,22 @@ def quantize2key(sequence,scale):
             key_center_found = True
         else:
             key_center += 1
+    print("Key Centre is",noteDict[key_center])
+    for each in sequence:
+        if each.velocity == 0:
+            continue
+        quantized = False
+        while not quantized:
+            print(midi2note(each))
+            if not (key_center + (each.note%12)) in scale:
+                each.note += 1
+                #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+                print(midi2note(each))
+            else:
+                quantized = True
+
+def quantize2key(sequence,scale,key_center):
+    quantized = False
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
         if each.velocity == 0:
@@ -140,77 +156,80 @@ def mutate(sequence):
     for each in sequence:
         if random.random() > 0.75:
             scale = int(random.uniform(0.0,8.0) // 1)
-            quantize2key(sequence,scaleDict[scale])
+            quantize2key_(sequence,scaleDict[scale])
 
 
 def create_selection_of_sequences():
     array = ['','','']
     for i in range(3):
         array[i] = __generate_random_notes()
-        quantize2key(array[i],major)
+        quantize2key_(array[i],major)
         mutate(array[i])
     return array
 
-def evolve(sequences):
-    sequenceA, sequenceB = sequences
-    split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
-    childAB = []
-    for i in range(split):
-        childAB.append(sequenceA[i])
-    for i in range(split,len(sequenceB)):
-        childAB.append(sequenceB[i])
-    return childAB
+def evolve(sequenceA):
+    newGeneration = create_selection_of_sequences()
+    spawned = []
+    for sequenceB in newGeneration:
+        quantize2key(sequenceB,major,sequenceA[0].note%12)
+        split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
+        childAB = []
+        for i in range(split):
+            childAB.append(sequenceA[i])
+        for i in range(split,len(sequenceB)):
+            childAB.append(sequenceB[i])
+        spawned.append(childAB)
+    for each in spawned:
+        playSequence(each)
+    selectSequence(spawned)
 
 def main():
     player = Player()
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
     
-    #player.play_wave(synth.generate_constant_wave(440.0, 1.0))
     chord = ["C3", "E3", "G3"]
     #output = mido.open_output('Nord Stage 3 MIDI Input')
     player.play_wave(synth.generate_chord(chord,1))
+    
     array = create_selection_of_sequences()
     for sequence in array:
-        score(sequence)
-        for msg in sequence:
-            #output.send(msg)
-            if msg.velocity == 0:
-                time.sleep(msg.time/120)
-            else:
-                player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
-            #time.sleep(msg.time/2400)
+        playSequence(sequence)
         time.sleep(1)
-        player.play_wave(synth.generate_chord(chord,1))
-    for msg in selectSequence(array):
-        if msg.velocity == 0:
-                time.sleep(msg.time/120)
-        else:
-            player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
-            #time.sleep(msg.time/2400)
-    time.sleep(1)
-    player.play_wave(synth.generate_chord(chord,1))
+        synth.generate_chord(chord,1)
+    
+    selectSequence(array)
 
 
 def selectSequence(array):
     sequenceA = False
     while True:
-        choice = input("Choose the sequence you want to pass to the next level choosing 1 - " + str(len(array)))
+        choice = input("Choose the sequence you want to pass to the next level choosing 1 - " + str(len(array)) + " or enter 0 to stop the evolution: ")
         if choice.isdigit:
             choice = int(choice) - 1
             if len(array) > choice:
                 if not sequenceA:
                     sequenceA = array[choice]
-                    array.pop(choice)
-                    continue
-                else:
-                    sequenceB = array[choice]
-                    sequences = (sequenceA,sequenceB)
-                    return evolve(sequences)
+                    evolve(sequenceA)
+                    break
         else:
             print("invalid choice")
         
-    
+def playSequence(sequence):
+    player = Player()
+    player.open_stream()    
+    score(sequence)
+    chord = ["C3", "E3", "G3"]
+    synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
+    for msg in sequence:
+        #output.send(msg)
+        if msg.velocity == 0:
+            time.sleep(msg.time/120)
+        else:
+            player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
+        #time.sleep(msg.time/2400)
+    time.sleep(1)
+    player.play_wave(synth.generate_chord(chord,1))
 
 def test():
     print(mido.get_output_names())

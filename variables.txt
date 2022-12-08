@@ -1,0 +1,10 @@
+this is a small text file to explain the variables currently exploited in the evolutionaly generation system
+chance of mutation (per phrase/per sequence)
+splice point in hetrogenous reproduction
+number of sequences
+chance of a break
+
+things that could also become variables:
+variable probability of a particular scale being selected during mutation;
+multiple splice points;
+length of genome;
