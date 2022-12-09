@@ -111,7 +111,7 @@ def __generate_random_notes():
     rNoteOn = bool
     rVelocity = int
     rNote = int
-    for i in range(32):
+    for i in range(8):
         if random.random() > 0.3:
             rVelocity = int(random.uniform(30.0,100.0))
             rNote = int(random.uniform(33.0,71.0) // 1)
@@ -192,13 +192,30 @@ def main():
     #output = mido.open_output('Nord Stage 3 MIDI Input')
     player.play_wave(synth.generate_chord(chord,1))
     
+    #for each in mido.get_output_names():
+    #    print(each)
+
+    internalMidi = mido.open_output('IAC Driver Bus 1')
     array = create_selection_of_sequences()
     for sequence in array:
         playSequence(sequence)
         time.sleep(1)
         synth.generate_chord(chord,1)
-    
     selectSequence(array)
+    
+    '''for sequence in create_selection_of_sequences():
+        tempo = 100
+        for msg in sequence:
+                if msg.is_meta:
+                    if msg.type == 'set_tempo':
+                        tempo = msg.tempo/1000
+                    continue
+                else:
+                    internalMidi.send(msg)
+                    time.sleep(msg.time/tempo)
+                    noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
+                    internalMidi.send(noteOff)'''
+
 
 
 def selectSequence(array):
@@ -207,29 +224,39 @@ def selectSequence(array):
         choice = input("Choose the sequence you want to pass to the next level choosing 1 - " + str(len(array)) + " or enter 0 to stop the evolution: ")
         if choice.isdigit:
             choice = int(choice) - 1
-            if len(array) > choice:
+            if len(array) > choice > -1:
                 if not sequenceA:
                     sequenceA = array[choice]
                     evolve(sequenceA)
                     break
+            if choice == -1:
+                print("Quitting...")
+                time.sleep(1)
+                break
         else:
             print("invalid choice")
+    quit
         
 def playSequence(sequence):
     player = Player()
-    player.open_stream()    
+    player.open_stream()
+    synth = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)    
     score(sequence)
     chord = ["C3", "E3", "G3"]
-    synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
-    for msg in sequence:
-        #output.send(msg)
-        if msg.velocity == 0:
-            time.sleep(msg.time/120)
-        else:
-            player.play_wave(synth.generate_constant_wave((midi2note(msg)),(msg.time/120)))
-        #time.sleep(msg.time/2400)
-    time.sleep(1)
-    player.play_wave(synth.generate_chord(chord,1))
+    with mido.open_output('IAC Driver Bus 1'):
+        for msg in sequence:    
+            #output.send(msg)
+            if msg.velocity == 0:
+                time.sleep(msg.time/120)
+            else:
+                internalMidi.send(msg)
+                time.sleep(msg.time/120)
+                noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
+                internalMidi.send(noteOff)
+
+            #time.sleep(msg.time/2400)
+        time.sleep(1)
+        player.play_wave(synth.generate_chord(chord,1))
 
 def test():
     print(mido.get_output_names())
@@ -251,5 +278,6 @@ def test():
     print(midiArray)
 
 if __name__ == '__main__':
+    internalMidi = mido.open_output('IAC Driver Bus 1')
     main()
     #test()
