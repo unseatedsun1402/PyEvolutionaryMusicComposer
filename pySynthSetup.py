@@ -5,7 +5,15 @@ from mido import *
 import time
 import random
 import math
+from tkinter import *
 
+"""Definitions
+###
+# 
+# Defines the globally accessed varibles/constants
+# 
+###
+"""
 noteDict = {9:"A",
             10:"Bb",
             11:"B",
@@ -40,7 +48,11 @@ scaleDict = {0:major,
 intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
     4:'major',5:'perfect',6:'augmented',7:'perfect',8:'minor',
     9:'major',10:'minor',11:'major'}
+
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
+
+TEMPO = 120
+
 
 def midi2note(msg):
     val = msg.note
@@ -105,6 +117,20 @@ def msg2dict(msg):
                 str.maketrans({a: None for a in string.punctuation})))
     return [result, on_]
 
+def sequence2midi(sequence):
+    midiSequence = mido.MidiFile()
+    track = mido.MidiTrack()
+    meta = mido.MetaMessage('set_tempo',tempo = TEMPO)
+    track.append(meta)
+    for note in sequence:
+        track.append(note)
+        noteOff = mido.Message('note_off',note=note.velocity, velocity = note.velocity,time = note.time)
+        track.append(noteOff.copy())
+    midiSequence.tracks.append(track)
+    return (midiSequence)
+
+
+
 def __generate_random_notes():
     sequence = []
     msg = mido.Message
@@ -112,13 +138,13 @@ def __generate_random_notes():
     rVelocity = int
     rNote = int
     for i in range(8):
-        if random.random() > 0.3:
-            rVelocity = int(random.uniform(30.0,100.0))
+        if random.random() > 0.1:
+            rVelocity = int(random.uniform(50.0,100.0))
             rNote = int(random.uniform(33.0,71.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
-        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = 50)
+        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = int(mido.second2tick(second = 0.5,ticks_per_beat = 96, tempo = mido.bpm2tempo(TEMPO))))
         sequence.append(msg)
     return sequence
 
@@ -181,41 +207,50 @@ def evolve(sequenceA):
         spawned.append(childAB)
     for each in spawned:
         playSequence(each)
+    spawned.append(sequenceA)
     selectSequence(spawned)
 
 def main():
+    window = Tk()
+    window.title("Evolutionary Composer")
+    window.geometry("300x250")
+    
     player = Player()
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
+
+    buttons = {}
     
     chord = ["C3", "E3", "G3"]
+
     #output = mido.open_output('Nord Stage 3 MIDI Input')
-    player.play_wave(synth.generate_chord(chord,1))
+    #player.play_wave(synth.generate_chord(chord,1))
     
-    #for each in mido.get_output_names():
-    #    print(each)
+    lbl = Label(window, text = "Select function: ")
+    lbl.grid()
 
-    internalMidi = mido.open_output('IAC Driver Bus 1')
-    array = create_selection_of_sequences()
-    for sequence in array:
-        playSequence(sequence)
-        time.sleep(1)
-        synth.generate_chord(chord,1)
-    selectSequence(array)
+    def clicked():
+        internalMidi = mido.open_output('IAC Driver Bus 1')
+        array = create_selection_of_sequences()
+        for i in range(len(array)):
+            
+
+        buttons = {name: Button(name=name) for name in instanceIDs}
+
+        for sequence in array:
+            playSequence(sequence)
+            time.sleep(1)
+            synth.generate_chord(chord,1)
+        selectSequence(array)
+        lbl.configure(text = "I just got clicked")
     
-    '''for sequence in create_selection_of_sequences():
-        tempo = 100
-        for msg in sequence:
-                if msg.is_meta:
-                    if msg.type == 'set_tempo':
-                        tempo = msg.tempo/1000
-                    continue
-                else:
-                    internalMidi.send(msg)
-                    time.sleep(msg.time/tempo)
-                    noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
-                    internalMidi.send(noteOff)'''
 
+    btn = Button(window, text = "Click me" ,
+                fg = "red", command=clicked)
+    # set Button grid
+    btn.grid(column=1, row=0)
+
+    window.mainloop()
 
 
 def selectSequence(array):
@@ -227,12 +262,27 @@ def selectSequence(array):
             if len(array) > choice > -1:
                 if not sequenceA:
                     sequenceA = array[choice]
+                    buffer = sequenceA
                     evolve(sequenceA)
                     break
             if choice == -1:
                 print("Quitting...")
+                if not len(array)< 4:
+                    midFile = sequence2midi(array[3])
+                    try:
+                        midFile.save('newSequence.mid')
+                    except:
+                        print(mido.KeySignatureError)
+                
+                else:
+                    midFile =  sequence2midi(array[0])
+                    try:
+                        midFile.save('newSequence.mid')
+                    except ValueError:
+                        print(ValueError)
                 time.sleep(1)
                 break
+
         else:
             print("invalid choice")
     quit
@@ -247,10 +297,10 @@ def playSequence(sequence):
         for msg in sequence:    
             #output.send(msg)
             if msg.velocity == 0:
-                time.sleep(msg.time/120)
+                time.sleep(msg.time/96)
             else:
                 internalMidi.send(msg)
-                time.sleep(msg.time/120)
+                time.sleep(msg.time/96)
                 noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
                 internalMidi.send(noteOff)
 
@@ -265,14 +315,14 @@ def test():
     midiArray = list
     for i, track in enumerate(testMidi.tracks):
         print('Track {}: {}'.format(i, track.name))
-        tempo = 100
+        tempo = TEMPO
         for msg in track:
             if msg.is_meta:
                 if msg.type == 'set_tempo':
                     tempo = msg.tempo/1000
                 continue
             else:
-                time.sleep(msg.time/tempo)
+                time.sleep(msg.time/TEMPO)
                 output.send(msg)
                 #print(msg)
     print(midiArray)
