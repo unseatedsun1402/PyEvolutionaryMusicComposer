@@ -195,7 +195,6 @@ def create_selection_of_sequences():
     return array
 
 def evolve(sequenceA):
-    swap = sequenceA
     newGeneration = create_selection_of_sequences()
     if len(array) < 4:
         array.append(sequenceA)
@@ -208,6 +207,7 @@ def evolve(sequenceA):
         split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
         childAB = []
         if(random.random() < 0.5):
+            swap = sequenceA
             sequenceA = sequenceB
             sequenceB = swap            
         for i in range(split):
