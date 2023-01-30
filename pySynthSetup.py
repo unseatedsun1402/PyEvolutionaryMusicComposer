@@ -14,6 +14,7 @@ from tkinter import *
 # 
 ###
 """
+array = ['']
 noteDict = {9:"A",
             10:"Bb",
             11:"B",
@@ -52,6 +53,7 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
 TEMPO = 120
+SIZE = 3
 
 
 def midi2note(msg):
@@ -140,7 +142,7 @@ def __generate_random_notes():
     for i in range(8):
         if random.random() > 0.1:
             rVelocity = int(random.uniform(50.0,100.0))
-            rNote = int(random.uniform(33.0,71.0) // 1)
+            rNote = int(random.uniform(45.0,71.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
@@ -186,41 +188,52 @@ def mutate(sequence):
 
 
 def create_selection_of_sequences():
-    array = ['','','']
-    for i in range(3):
+    for i in range(SIZE):
         array[i] = __generate_random_notes()
         quantize2key_(array[i],major)
         mutate(array[i])
     return array
 
 def evolve(sequenceA):
+    swap = sequenceA
     newGeneration = create_selection_of_sequences()
+    if len(array) < 4:
+        array.append(sequenceA)
+    else:
+        array[len(array)-1] = sequenceA
+
     spawned = []
     for sequenceB in newGeneration:
-        quantize2key(sequenceB,major,sequenceA[0].note%12)
+        quantize2key(sequenceB,scaleDict[int(random.randrange(0,7))],sequenceA[0].note%12)
         split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
         childAB = []
+        if(random.random() < 0.5):
+            sequenceA = sequenceB
+            sequenceB = swap            
         for i in range(split):
             childAB.append(sequenceA[i])
         for i in range(split,len(sequenceB)):
             childAB.append(sequenceB[i])
         spawned.append(childAB)
+    
+    i=0
     for each in spawned:
-        playSequence(each)
-    spawned.append(sequenceA)
-    selectSequence(spawned)
+        array[i] = each
+        i += 1
 
 def main():
     window = Tk()
     window.title("Evolutionary Composer")
-    window.geometry("300x250")
+    window.geometry("450x250")
     
     player = Player()
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
 
+    buttonItems = []
     buttons = {}
-    
+    for i in range(SIZE-1):
+        array.append('')
     chord = ["C3", "E3", "G3"]
 
     #output = mido.open_output('Nord Stage 3 MIDI Input')
@@ -231,18 +244,37 @@ def main():
 
     def clicked():
         internalMidi = mido.open_output('IAC Driver Bus 1')
+        
+        
         array = create_selection_of_sequences()
-        for i in range(len(array)):
-            
+        counter = 0
+        for each in array:
+            buttonItems.append(str(counter))
+            counter += 1
+        buttons = {each: Button(text="Sequence: "+each,command=lambda: playSequence(array[int(each)])) for each in buttonItems}
 
-        buttons = {name: Button(name=name) for name in instanceIDs}
+        #counter = 0
+        for each in buttons:
+            buttons[each].grid(row = 1, column = each)
+            #counter =+ 1
 
-        for sequence in array:
+        '''
+        for sequence in array:,command = playSequence(array[each])
             playSequence(sequence)
             time.sleep(1)
             synth.generate_chord(chord,1)
-        selectSequence(array)
-        lbl.configure(text = "I just got clicked")
+        selectSequence(array)'''
+
+        lbl.configure(text = "Generate new sample of melodies")
+
+        value_inside = StringVar()
+        value_inside.set("-1")
+
+        select_sequence = OptionMenu(window, value_inside, *buttonItems)
+        select_sequence.grid(row=2,column = 0,columnspan=2)
+
+        submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside.get())))
+        submit_button.grid(row = 2,column =2)
     
 
     btn = Button(window, text = "Click me" ,
@@ -253,38 +285,31 @@ def main():
     window.mainloop()
 
 
-def selectSequence(array):
+def selectSequence(choice):
     sequenceA = False
     while True:
-        choice = input("Choose the sequence you want to pass to the next level choosing 1 - " + str(len(array)) + " or enter 0 to stop the evolution: ")
-        if choice.isdigit:
-            choice = int(choice) - 1
-            if len(array) > choice > -1:
-                if not sequenceA:
-                    sequenceA = array[choice]
-                    buffer = sequenceA
-                    evolve(sequenceA)
-                    break
-            if choice == -1:
-                print("Quitting...")
-                if not len(array)< 4:
-                    midFile = sequence2midi(array[3])
-                    try:
-                        midFile.save('newSequence.mid')
-                    except:
-                        print(mido.KeySignatureError)
-                
-                else:
-                    midFile =  sequence2midi(array[0])
-                    try:
-                        midFile.save('newSequence.mid')
-                    except ValueError:
-                        print(ValueError)
-                time.sleep(1)
+        if len(array) > choice > -1:
+            if not sequenceA:
+                sequenceA = array[choice]
+                buffer = sequenceA
+                evolve(sequenceA)
                 break
-
-        else:
-            print("invalid choice")
+        if choice == -1:
+            print("Quitting...")
+            if not len(array)< 4:
+                midFile = sequence2midi(array[3])
+                try:
+                    midFile.save('newSequence.mid')
+                except:
+                    print(mido.KeySignatureError)
+            
+            else:
+                midFile =  sequence2midi(array[0])
+                try:
+                    midFile.save('newSequence.mid')
+                except ValueError:
+                    print(ValueError)
+            break
     quit
         
 def playSequence(sequence):
