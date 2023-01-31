@@ -231,7 +231,7 @@ def main():
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
 
-    buttonItems = []
+    buttonItems = tuple(i for i in range(SIZE))
     buttons = {}
     for i in range(SIZE-1):
         array.append('')
@@ -248,11 +248,8 @@ def main():
         
         
         array = create_selection_of_sequences()
-        counter = 0
-        for each in array:
-            buttonItems.append(str(counter))
-            counter += 1
-        buttons = {each: Button(text="Sequence: "+each,command=lambda: playSequence(array[int(each)])) for each in buttonItems}
+        
+        buttons = {each: Button(text="Sequence: "+str(each),command=lambda: playSequence(array[int(each)])) for each in buttonItems}
 
         #counter = 0
         for each in buttons:
@@ -272,7 +269,7 @@ def main():
         value_inside.set("-1")
 
         select_sequence = OptionMenu(window, value_inside, *buttonItems)
-        select_sequence.grid(row=2,column = 0,columnspan=2)
+        select_sequence.grid(row=2,column = 0,columnspan=1)
 
         submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside.get())))
         submit_button.grid(row = 2,column =2)
