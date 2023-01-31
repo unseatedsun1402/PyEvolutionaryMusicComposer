@@ -28,6 +28,13 @@ noteDict = {9:"A",
             7:"A",
             8:"Ab"}
 
+chordDict = {"major":[0,4],
+"sus2":[0,2],
+"sus4":[0,5],
+"perfect":[0,7],
+"add6":[0,9],
+"7th":[0,11]}
+
 major = [0,2,4,5,7,9,11]
 minor = [0,2,3,5,7,8,10]
 dorian   = [0,2,3,5,7,9,10]
@@ -54,10 +61,15 @@ intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
 TEMPO = 120
 SIZE = 3
+LENGTH = 8
 
 
 def midi2note(msg):
     val = msg.note
+    note = noteDict[val%12]+str(val//12)
+    return note
+
+def mNote2note(val):
     note = noteDict[val%12]+str(val//12)
     return note
 
@@ -139,7 +151,7 @@ def __generate_random_notes():
     rNoteOn = bool
     rVelocity = int
     rNote = int
-    for i in range(8):
+    for i in range(LENGTH):
         if random.random() > 0.1:
             rVelocity = int(random.uniform(50.0,100.0))
             rNote = int(random.uniform(45.0,71.0) // 1)
@@ -150,21 +162,28 @@ def __generate_random_notes():
         sequence.append(msg)
     return sequence
 
-def harmonize(sequence,key,scale):
-    stepsCount = 0
-    step = 0
-    for msg in sequence:
-        if step == 0 and msg.velocity == 0:
-            chord = [str(noteDict[key]+3),str(noteDict[(key+5)%12]+3)]
-            step += 1
-            stepsCount += 1
-            continue
-        if step == 0:
-            chord = [msg.note, msg.note +5] 
-        elif step == 4:
-            step = 0
-            stepsCount += 1
+def harmonize(note,interval):
+    player = Player()
+    player.open_stream()
+    synth = Synthesizer(osc1_waveform=Waveform.sine, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
+    if (interval%12-note%12) < 0:
+        interval = 12-(note%12)
+    else:
+        interval = int(interval%12)
 
+    #print(mNote2note(note))
+    if (intervalDict[interval] == "major" or intervalDict[interval] == "perfect"):
+        root = mNote2note(note)
+        part1 = (mNote2note(note))[:1]
+        try:
+            part2 = int(mNote2note(note)[1:]) -1
+        except:
+            part2 = int(mNote2note(note)[2:]) -1
+
+        tonic = part1+str(part2)
+        chord = [root,tonic]
+        player.play_wave(synth.generate_chord(chord,length=(TEMPO/60)))
+        
 
 def score(sequence):
     noteA = int
@@ -310,26 +329,25 @@ def selectSequence(choice):
             break
     quit
         
-def playSequence(sequence):
-    player = Player()
-    player.open_stream()
-    synth = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)    
+def playSequence(sequence):    
     score(sequence)
     chord = ["C3", "E3", "G3"]
     with mido.open_output('IAC Driver Bus 1'):
+        interval = 0
         for msg in sequence:    
             #output.send(msg)
             if msg.velocity == 0:
                 time.sleep(msg.time/96)
             else:
                 internalMidi.send(msg)
+                #harmonize(msg.note,interval)
+                interval = msg.note
                 time.sleep(msg.time/96)
                 noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
                 internalMidi.send(noteOff)
 
             #time.sleep(msg.time/2400)
         time.sleep(1)
-        player.play_wave(synth.generate_chord(chord,1))
 
 def test():
     print(mido.get_output_names())
