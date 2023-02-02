@@ -64,16 +64,19 @@ SIZE = 3
 LENGTH = 8
 
 
+"""Turns mido midi messages into string note value (e.g. xA3)"""
 def midi2note(msg):
     val = msg.note
+
     note = noteDict[val%12]+str(val//12)
     return note
-
+"""Turns midi note value (int) into a string note value (e.g. A3)"""
 def mNote2note(val):
     note = noteDict[val%12]+str(val//12)
     return note
 
-def quantize2key_(sequence,scale):
+"""Transposes not to fit into the passed scale list"""
+def quantize2key_(sequence: list,scale: list):
     quantized = False
     key_center_found = False
     key_center = 0
@@ -113,7 +116,7 @@ def quantize2key(sequence,scale,key_center):
             else:
                 quantized = True
 
-
+"""turns a mido midi message into a dictionary of accessible variables"""
 def msg2dict(msg):
     result = dict()
     if 'note_on' in msg:
@@ -131,6 +134,7 @@ def msg2dict(msg):
                 str.maketrans({a: None for a in string.punctuation})))
     return [result, on_]
 
+"""Turns a sequence of notes in to a midi sequence"""
 def sequence2midi(sequence):
     midiSequence = mido.MidiFile()
     track = mido.MidiTrack()
@@ -144,7 +148,7 @@ def sequence2midi(sequence):
     return (midiSequence)
 
 
-
+"""Generates a random series of notes and returns them as a mido message sequence"""
 def __generate_random_notes():
     sequence = []
     msg = mido.Message
@@ -162,6 +166,7 @@ def __generate_random_notes():
         sequence.append(msg)
     return sequence
 
+"""harmonizes a note based on the previous interval"""
 def harmonize(note,interval):
     player = Player()
     player.open_stream()
@@ -184,7 +189,7 @@ def harmonize(note,interval):
         chord = [root,tonic]
         player.play_wave(synth.generate_chord(chord,length=(TEMPO/60)))
         
-
+"""Gives an arbritrary fitness score"""
 def score(sequence):
     noteA = int
     noteB = int
@@ -205,7 +210,7 @@ def mutate(sequence):
             scale = int(random.uniform(0.0,8.0) // 1)
             quantize2key_(sequence,scaleDict[scale])
 
-
+"""Returns a list of midi note sequences"""
 def create_selection_of_sequences():
     for i in range(SIZE):
         array[i] = __generate_random_notes()
@@ -213,6 +218,7 @@ def create_selection_of_sequences():
         mutate(array[i])
     return array
 
+"""Generates an list of new midi sequences based on the passed sequence"""
 def evolve(sequenceA):
     swap = sequenceA
     newGeneration = create_selection_of_sequences()
@@ -241,6 +247,7 @@ def evolve(sequenceA):
         array[i] = each
         i += 1
 
+"""Main Code loop containing the GUI"""
 def main():
     window = Tk()
     window.title("Evolutionary Composer")
@@ -301,7 +308,7 @@ def main():
 
     window.mainloop()
 
-
+"""Select the new sequence to evolve"""
 def selectSequence(choice):
     sequenceA = False
     while True:
@@ -328,7 +335,8 @@ def selectSequence(choice):
                     print(ValueError)
             break
     quit
-        
+
+"""Plays back the midi sequence to the internal midi bus or synth"""        
 def playSequence(sequence):    
     score(sequence)
     chord = ["C3", "E3", "G3"]
@@ -368,6 +376,7 @@ def test():
                 #print(msg)
     print(midiArray)
 
+"""Detects if the script is being ran as a program or called as a library"""
 if __name__ == '__main__':
     internalMidi = mido.open_output('IAC Driver Bus 1')
     main()
