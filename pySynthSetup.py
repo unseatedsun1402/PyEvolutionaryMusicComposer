@@ -6,6 +6,7 @@ import time
 import random
 import math
 from tkinter import *
+from tkinter import filedialog as fd
 
 """Definitions
 ###
@@ -134,7 +135,7 @@ def msg2dict(msg):
 def sequence2midi(sequence):
     midiSequence = mido.MidiFile()
     track = mido.MidiTrack()
-    meta = mido.MetaMessage('set_tempo',tempo = TEMPO)
+    meta = mido.MetaMessage('set_tempo',tempo = TEMPO, time = 0)
     track.append(meta)
     for note in sequence:
         track.append(note)
@@ -292,6 +293,27 @@ def main():
 
         submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside.get())))
         submit_button.grid(row = 2,column =2)
+       
+        def saveFile(choice: int):
+            filename = fd.asksaveasfilename()
+            midFile = sequence2midi(array[choice])
+            try:
+                midFile.save('newSequence.mid')
+            except:
+                print(mido.KeySignatureError)
+
+            else:
+                midFile =  sequence2midi(array[choice])
+                try:
+                    midFile.save(filename)
+                except ValueError:
+                    print(ValueError)
+            
+
+        save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside.get())))
+        save_button.grid(row=3,column = 2)
+
+    
     
 
     btn = Button(window, text = "Click me" ,
@@ -300,6 +322,7 @@ def main():
     btn.grid(column=1, row=0)
 
     window.mainloop()
+
 
 
 def selectSequence(choice):
