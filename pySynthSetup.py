@@ -36,8 +36,8 @@ chordDict = {"major":[0,4],
 "add6":[0,9],
 "7th":[0,11]}
 
-major = [0,2,4,5,7,9,11]
-minor = [0,2,3,5,7,8,10]
+major =    [0,2,4,5,7,9,11]
+minor =    [0,2,3,5,7,8,10]
 dorian   = [0,2,3,5,7,9,10]
 phrygian = [0,1,3,5,7,8,10]
 lydian   = [0,2,4,6,7,9,11]
@@ -60,9 +60,13 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
 
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
-TEMPO = 120
-SIZE = 3
-LENGTH = 8
+BPM = 120
+TEMPO = int(((60/BPM))*1000000)
+SIZE = 3           #no. of sequences
+LENGTH = 12        #no. of notes
+TK = 480
+TICKS = int(mido.second2tick(60/BPM,TK,TEMPO))
+KEY = 'C'
 
 
 """Turns mido midi messages into string note value (e.g. xA3)"""
@@ -79,8 +83,8 @@ def mNote2note(val):
 """Transposes not to fit into the passed scale list"""
 def quantize2key_(sequence: list,scale: list):
     quantized = False
-    key_center_found = False
-    key_center = 0
+    key_center_found = True
+    key_center = 3
     while not key_center_found:
         if not sequence[key_center].velocity == 0:
             key_center = sequence[key_center].note%12
@@ -101,7 +105,7 @@ def quantize2key_(sequence: list,scale: list):
             else:
                 quantized = True
 
-def quantize2key(sequence,scale,key_center):
+def quantize2key(sequence: list,scale: list,key_center: str):
     quantized = False
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
@@ -139,11 +143,15 @@ def msg2dict(msg):
 def sequence2midi(sequence):
     midiSequence = mido.MidiFile()
     track = mido.MidiTrack()
-    meta = mido.MetaMessage('set_tempo',tempo = TEMPO, time = 0)
-    track.append(meta)
+    metaTsg = mido.MetaMessage('time_signature', numerator=4, denominator=4, clocks_per_click=24, notated_32nd_notes_per_beat=8,time=0)
+    metaTmp = mido.MetaMessage('set_tempo',tempo = TEMPO, time = 0)
+    track.append(metaTsg)
+    track.append(metaTmp)
     for note in sequence:
+        notetime = note.time
+        note.time = 0
         track.append(note)
-        noteOff = mido.Message('note_off',note=note.velocity, velocity = note.velocity,time = note.time)
+        noteOff = mido.Message('note_off',note=note.note, velocity = note.velocity,time = notetime)
         track.append(noteOff.copy())
     midiSequence.tracks.append(track)
     return (midiSequence)
@@ -163,7 +171,7 @@ def __generate_random_notes():
         else:
             rVelocity = (0)
             rNote = (0)
-        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = int(mido.second2tick(second = 0.5,ticks_per_beat = 96, tempo = mido.bpm2tempo(TEMPO))))
+        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = TICKS)
         sequence.append(msg)
     return sequence
 
@@ -188,7 +196,7 @@ def harmonize(note,interval):
 
         tonic = part1+str(part2)
         chord = [root,tonic]
-        player.play_wave(synth.generate_chord(chord,length=(TEMPO/60)))
+        player.play_wave(synth.generate_chord(chord,length=(60/TEMPO)))
         
 """Gives an arbritrary fitness score"""
 def score(sequence):
@@ -303,18 +311,11 @@ def main():
        
         def saveFile(choice: int):
             filename = fd.asksaveasfilename()
-            midFile = sequence2midi(array[choice])
+            midFile =  sequence2midi(array[choice])
             try:
-                midFile.save('newSequence.mid')
-            except:
-                print(mido.KeySignatureError)
-
-            else:
-                midFile =  sequence2midi(array[choice])
-                try:
-                    midFile.save(filename)
-                except ValueError:
-                    print(ValueError)
+                midFile.save(filename)
+            except Exception:
+                print("Error")
             
 
         save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside.get())))
@@ -368,12 +369,12 @@ def playSequence(sequence):
         for msg in sequence:    
             #output.send(msg)
             if msg.velocity == 0:
-                time.sleep(msg.time/96)
+                time.sleep(mido.tick2second(msg.time,TK,TEMPO))
             else:
                 internalMidi.send(msg)
                 #harmonize(msg.note,interval)
                 interval = msg.note
-                time.sleep(msg.time/96)
+                time.sleep(mido.tick2second(msg.time,TK,TEMPO))
                 noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
                 internalMidi.send(noteOff)
 
