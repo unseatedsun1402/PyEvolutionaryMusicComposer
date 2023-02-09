@@ -7,6 +7,7 @@ import random
 import math
 from tkinter import *
 from tkinter import filedialog as fd
+from functools import partial
 
 """Definitions
 ###
@@ -294,7 +295,7 @@ def main():
         
         array = create_selection_of_sequences()
         
-        buttons = {each: Button(text="Sequence: "+str(each),command=lambda: playSequence(array[int(each)])) for each in buttonItems}
+        buttons = {each: Button(text="Sequence: "+str(each),command=partial(playSequence,each)) for each in buttonItems}
 
         #counter = 0
         for each in buttons:
@@ -371,9 +372,10 @@ def selectSequence(choice):
                 break
 
         
-def playSequence(sequence):    
+def playSequence(choice: Button):    
     """Plays back the midi sequence to the internal midi bus or synth"""
-    score(sequence)
+    score(array[choice])
+    sequence = array[choice]
     chord = ["C3", "E3", "G3"]
     with mido.open_output('IAC Driver Bus 1'):
         interval = 0
