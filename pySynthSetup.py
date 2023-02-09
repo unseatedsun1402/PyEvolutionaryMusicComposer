@@ -110,7 +110,7 @@ def quantize2key_(sequence: list,scale: list):
                 quantized = True
 
 def quantize2key(sequence: list,scale: list,key_center: str):
-    """Transposes note to fit into the passed scale list"""
+    """Transposes notes in sequence to fit into the passed scale list"""
     quantized = False
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
@@ -221,19 +221,22 @@ def score(sequence):
         cost += intervalCost[interval]
     print('cost', cost)
 
-def mutate(sequence):
+def mutateSeq(sequence):
     for each in sequence:
         if random.random() > 0.75:
             scale = int(random.uniform(0.0,8.0) // 1)
             quantize2key_(sequence,scaleDict[scale])
 
+def mutateNote(note: int):
+    note += random.randint(-11,11)
+    return note
 
 def create_selection_of_sequences():
     """Returns a list of midi note sequences"""
     for i in range(SIZE):
         array[i] = __generate_random_notes()
         quantize2key_(array[i],major)
-        mutate(array[i])
+        mutateSeq(array[i])
     return array
 
 
@@ -260,6 +263,39 @@ def evolve(sequenceA):
         for i in range(split,len(sequenceB)):
             childAB.append(sequenceB[i])
         spawned.append(childAB)
+    
+    i=0
+    for each in spawned:
+        array[i] = each
+        i += 1
+
+def crossCombine(sequenceA,sequenceB):
+    """Generates an list of new midi sequences based on the parent sequences"""
+    swap = sequenceA
+    newGeneration = []
+    if len(array) < 4:
+        array.append(sequenceA)
+    else:
+        array[len(array)-1] = sequenceA
+
+    spawned = []
+    for i in range(SIZE):
+        child = []
+        start = int
+        end = int
+        if(random.random()>0.5):
+            child = sequenceA
+            
+            for i in range(random.randrange(0,11,step=1)):
+                child[i] = sequenceB[i]
+                if(random.random()<0.1):
+                    child[i]= mutateNote(child[i].note)
+        else:
+            child = sequenceB
+            for i in range(random.randrange(0,11,step=1)):
+                child[i] = sequenceA[i]
+                if(random.random()<0.1):
+                    child[i]= mutateNote(child[i].note)
     
     i=0
     for each in spawned:
@@ -302,22 +338,25 @@ def main():
             buttons[each].grid(row = 1, column = each)
             #counter =+ 1
 
-        '''
-        for sequence in array:,command = playSequence(array[each])
-            playSequence(sequence)
-            time.sleep(1)
-            synth.generate_chord(chord,1)
-        selectSequence(array)'''
 
         lbl.configure(text = "Generate new sample of melodies")
 
-        value_inside = StringVar()
-        value_inside.set("-1")
+        value_inside1 = StringVar()
+        value_inside1.set("0")
 
-        select_sequence = OptionMenu(window, value_inside, *buttonItems)
+        value_inside2 = StringVar()
+        value_inside2.set("1")
+
+        select_sequence = OptionMenu(window, value_inside1, *buttonItems)
         select_sequence.grid(row=2,column = 0,columnspan=1)
 
-        submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside.get())))
+        select_sequence = OptionMenu(window, value_inside2, *buttonItems)
+        select_sequence.grid(row=2,column = 1,columnspan=1)
+
+        '''submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside1.get())))
+        submit_button.grid(row = 2,column =2)'''
+
+        submit_button = Button(window, text='Submit', command=lambda: crossCombine(array[int(value_inside1.get())],array[int(value_inside2.get())]))
         submit_button.grid(row = 2,column =2)
        
         def saveFile(choice: int):
@@ -329,7 +368,7 @@ def main():
                 print("Error")
             
 
-        save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside.get())))
+        save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside1.get())))
         save_button.grid(row=3,column = 2)
 
     
