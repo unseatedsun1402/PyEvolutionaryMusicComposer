@@ -17,6 +17,7 @@ from functools import partial
 ###
 """
 array = ['']
+buttonItems = tuple
 noteDict = {9:"A",
             10:"Bb",
             11:"B",
@@ -63,10 +64,10 @@ intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
 BPM = 120
 TEMPO = int(((60/BPM))*1000000)
-SIZE = 3           #no. of sequences
-LENGTH = 12        #no. of notes
+SIZE = 5           #no. of sequences
+LENGTH = 64       #no. of subdivisions / genome length
 TK = 480
-TICKS = int(mido.second2tick(60/BPM,TK,TEMPO))
+TICKS = int(mido.second2tick(15/(2*BPM),TK,TEMPO))
 KEY = 0
 
 
@@ -90,41 +91,50 @@ def quantize2key_(sequence: list,scale: list):
     key_center_found = True
     key_center = KEY
     while not key_center_found:
-        if not sequence[key_center].velocity == 0:
-            key_center = sequence[key_center].note%12
-            key_center_found = True
-        else:
-            key_center += 1
+        try:
+            if not sequence[key_center].velocity == 0:
+                key_center = sequence[key_center].note%12
+                key_center_found = True
+            else:
+                key_center += 1
+        except:
+            print("Non Message Type")
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
-        if each.velocity == 0:
-            continue
-        quantized = False
-        while not quantized:
-            print(midi2note(each))
-            if not (key_center + (each.note%12)) in scale:
-                each.note += 1
-                #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+        try:
+            if each.velocity == 0:
+                continue
+            quantized = False
+            while not quantized:
                 print(midi2note(each))
-            else:
-                quantized = True
+                if not (key_center + (each.note%12)) in scale:
+                    each.note += 1
+                    #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+                    print(midi2note(each))
+                else:
+                    quantized = True
+        except:
+            print("Non Message Type")
 
 def quantize2key(sequence: list,scale: list,key_center: str):
     """Transposes notes in sequence to fit into the passed scale list"""
     quantized = False
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
-        if each.velocity == 0:
-            continue
-        quantized = False
-        while not quantized:
-            print(midi2note(each))
-            if not (key_center + (each.note%12)) in scale:
-                each.note += 1
-                #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+        try:
+            if each.velocity == 0:
+                continue
+            quantized = False
+            while not quantized:
                 print(midi2note(each))
-            else:
-                quantized = True
+                if not (key_center + (each.note%12)) in scale:
+                    each.note += 1
+                    #print('Quantized ' + str(each.note-1) + 'to' + str(each.note))
+                    print(midi2note(each))
+                else:
+                    quantized = True
+        except Exception:
+            print("Non Message Type")
 
 
 def msg2dict(msg: Message):
@@ -171,15 +181,23 @@ def __generate_random_notes():
     rNoteOn = bool
     rVelocity = int
     rNote = int
-    for i in range(LENGTH):
+    genome = LENGTH
+    while genome > 0:
         if random.random() > 0.1:
             rVelocity = int(random.uniform(50.0,100.0))
             rNote = int(random.uniform(45.0,71.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
-        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = TICKS)
+        length = random.randint(1,4)
+        length *= 2
+        time = length*TICKS
+        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = 0)
         sequence.append(msg)
+        msg = mido.Message('note_off',note=rNote,velocity = rVelocity, time = time)
+        genome -= length
+        sequence.append(msg)
+        sequence.append('' for each in range(length-1))
     return sequence
 
 def harmonize(note,interval):
@@ -212,13 +230,16 @@ def score(sequence):
     noteB = int
     cost = 0
     for i in range(len(sequence)-2):
-        noteA = sequence[i].note % 12
-        noteB = sequence[i+1].note % 12
-        interval = (noteA - noteB)
-        if interval < 0:
-            interval = 12 + interval
-        print(intervalDict[interval])
-        cost += intervalCost[interval]
+        try:
+            noteA = sequence[i].note % 12
+            noteB = sequence[i+1].note % 12
+            interval = (noteA - noteB)
+            if interval < 0:
+                interval = 12 + interval
+            print(intervalDict[interval])
+            cost += intervalCost[interval]
+        except:
+            print("Non Message Type")
     print('cost', cost)
 
 def mutateSeq(sequence):
@@ -244,7 +265,7 @@ def evolve(sequenceA):
     """Generates an list of new midi sequences based on the passed sequence"""
     swap = sequenceA
     newGeneration = create_selection_of_sequences()
-    if len(array) < 4:
+    if len(array)-1 == SIZE:
         array.append(sequenceA)
     else:
         array[len(array)-1] = sequenceA
@@ -273,48 +294,47 @@ def crossCombine(sequenceA,sequenceB):
     """Generates an list of new midi sequences based on the parent sequences"""
     swap = sequenceA
     newGeneration = []
-    if len(array) < 4:
-        array.append(sequenceA)
-    else:
-        array[len(array)-1] = sequenceA
+    array[len(array)-1] = sequenceB
+    array[len(array)-2] = sequenceA
+        
 
     spawned = []
-    for i in range(SIZE):
+    for i in range(SIZE-2):
         child = []
         start = int
         end = int
         if(random.random()>0.5):
             child = sequenceA
             
-            for i in range(random.randrange(0,11,step=1)):
+            for i in range(random.randrange(0,int(0.75*LENGTH),step=1)):
                 child[i] = sequenceB[i]
                 if(random.random()<0.1):
-                    child[i]= mutateNote(child[i].note)
+                    child[i].note = mutateNote(child[i].note)
         else:
             child = sequenceB
-            for i in range(random.randrange(0,11,step=1)):
+            for i in range(random.randrange(0,int(0.75*LENGTH),step=1)):
                 child[i] = sequenceA[i]
                 if(random.random()<0.1):
-                    child[i]= mutateNote(child[i].note)
+                    child[i].note = mutateNote(child[i].note)
     
     i=0
     for each in spawned:
         array[i] = each
         i += 1
+    return
 
 
 def main():
     """Main Code loop containing the GUI"""
     window = Tk()
     window.title("Evolutionary Composer")
-    window.geometry("450x250")
+    window.geometry("650x250")
     
     player = Player()
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
 
     buttonItems = tuple(i for i in range(SIZE))
-    buttons = {}
     for i in range(SIZE-1):
         array.append('')
     chord = ["C3", "E3", "G3"]
@@ -324,6 +344,7 @@ def main():
     
     lbl = Label(window, text = "Select function: ")
     lbl.grid()
+
 
     def clicked():
         internalMidi = mido.open_output('IAC Driver Bus 1')
@@ -340,6 +361,10 @@ def main():
 
 
         lbl.configure(text = "Generate new sample of melodies")
+        lbl.grid(columnspan=2)
+
+        instuction = Label(window,text="Use the dropdowns to select the parents to start the new generation")
+        instuction.grid(column=1,row=2,columnspan=3)
 
         value_inside1 = StringVar()
         value_inside1.set("0")
@@ -348,16 +373,16 @@ def main():
         value_inside2.set("1")
 
         select_sequence = OptionMenu(window, value_inside1, *buttonItems)
-        select_sequence.grid(row=2,column = 0,columnspan=1)
+        select_sequence.grid(row=3,column = 0,columnspan=1)
 
         select_sequence = OptionMenu(window, value_inside2, *buttonItems)
-        select_sequence.grid(row=2,column = 1,columnspan=1)
+        select_sequence.grid(row=3,column = 1,columnspan=1)
 
         '''submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside1.get())))
         submit_button.grid(row = 2,column =2)'''
 
         submit_button = Button(window, text='Submit', command=lambda: crossCombine(array[int(value_inside1.get())],array[int(value_inside2.get())]))
-        submit_button.grid(row = 2,column =2)
+        submit_button.grid(row = 3,column =2)
        
         def saveFile(choice: int):
             filename = fd.asksaveasfilename()
@@ -369,7 +394,7 @@ def main():
             
 
         save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside1.get())))
-        save_button.grid(row=3,column = 2)
+        save_button.grid(row=5,column = 2)
 
     
     
@@ -377,7 +402,7 @@ def main():
     btn = Button(window, text = "Click me" ,
                 fg = "red", command=clicked)
     # set Button grid
-    btn.grid(column=1, row=0)
+    btn.grid(column=3, row=0)
 
     window.mainloop()
 
@@ -411,26 +436,28 @@ def selectSequence(choice):
                 break
 
         
-def playSequence(choice: Button):    
+def playSequence(choice: int):    
     """Plays back the midi sequence to the internal midi bus or synth"""
     score(array[choice])
     sequence = array[choice]
     chord = ["C3", "E3", "G3"]
     with mido.open_output('IAC Driver Bus 1'):
         interval = 0
-        for msg in sequence:    
-            #output.send(msg)
-            if msg.velocity == 0:
-                time.sleep(mido.tick2second(msg.time,TK,TEMPO))
-            else:
-                internalMidi.send(msg)
-                #harmonize(msg.note,interval)
-                interval = msg.note
-                time.sleep(mido.tick2second(msg.time,TK,TEMPO))
-                noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
-                internalMidi.send(noteOff)
+        for msg in sequence:
+            if hasattr(msg,"velocity"):
+                #output.send(msg)
+                if msg.velocity == 0:
+                    time.sleep(mido.tick2second(msg.time,TK,TEMPO))
+                else:
+                    time.sleep(mido.tick2second(msg.time,TK,TEMPO))
+                    internalMidi.send(msg)
+                    #harmonize(msg.note,interval)
+                    interval = msg.note
+                    
+                    #noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
+                    #internalMidi.send(noteOff)
 
-            #time.sleep(msg.time/2400)
+                #time.sleep(msg.time/2400)
         time.sleep(1)
 
 def test():
