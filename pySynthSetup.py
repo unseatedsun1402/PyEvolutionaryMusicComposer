@@ -62,9 +62,9 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
 
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
-BPM = 120
+BPM = 160
 TEMPO = int(((60/BPM))*1000000)
-SIZE = 5           #no. of sequences
+SIZE = 7           #no. of sequences
 LENGTH = 64       #no. of subdivisions / genome length
 TK = 480
 TICKS = int(mido.second2tick(15/(2*BPM),TK,TEMPO))
@@ -90,6 +90,7 @@ def quantize2key_(sequence: list,scale: list):
     quantized = False
     key_center_found = True
     key_center = KEY
+    scale = scaleDict[random.randint(0,7)]
     while not key_center_found:
         try:
             if not sequence[key_center].velocity == 0:
@@ -137,6 +138,7 @@ def quantize2key(sequence: list,scale: list,key_center: str):
             print("Non Message Type")
 
 
+
 def msg2dict(msg: Message):
     """turns a mido midi message into a dictionary of accessible variables"""
     result = dict()
@@ -164,11 +166,12 @@ def sequence2midi(sequence):
     track.append(metaTsg)
     track.append(metaTmp)
     for note in sequence:
-        notetime = note.time
-        note.time = 0
-        track.append(note)
-        noteOff = mido.Message('note_off',note=note.note, velocity = note.velocity,time = notetime)
-        track.append(noteOff.copy())
+        if hasattr(note,"velocity"):
+            notetime = note.time
+            note.time = 0
+            track.append(note)
+            noteOff = mido.Message('note_off',note=note.note, velocity = note.velocity,time = notetime)
+            track.append(noteOff.copy())
     midiSequence.tracks.append(track)
     return (midiSequence)
 
@@ -182,24 +185,24 @@ def __generate_random_notes():
     rVelocity = int
     rNote = int
     genome = LENGTH
-    while genome > 1:
+    while len(sequence) < LENGTH:
         if random.random() > 0.1:
             rVelocity = int(random.uniform(50.0,100.0))
             rNote = int(random.uniform(45.0,71.0) // 1)
         else:
             rVelocity = (0)
             rNote = (0)
-        length = random.randint(1,4)
+        length = random.randint(2,4)
         length *= 2
         time = length*TICKS
-        if time >= (genome*TICKS)-time:
-            time = (genome*TICKS)
+        if time >= ((genome*TICKS)-time):
+            time = int(genome*TICKS)
         msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = 0)
         sequence.append(msg)
         msg = mido.Message('note_off',note=rNote,velocity = rVelocity, time = time)
-        genome -= time/TICKS
+        genome -= int(time/TICKS)
         sequence.append(msg)
-        for each in range(length-2):
+        for each in range(int(time/TICKS)-2):
             sequence.append('')
     return sequence
 
@@ -293,38 +296,7 @@ def evolve(sequenceA):
         array[i] = each
         i += 1
 
-'''def crossCombine(sequenceA,sequenceB):
-    """Generates an list of new midi sequences based on the parent sequences"""
-    swap = sequenceA
-    newGeneration = []
-    array[len(array)-1] = sequenceB
-    array[len(array)-2] = sequenceA
-        
 
-    spawned = []
-    for i in range(SIZE-2):
-        child = []
-        start = int
-        end = int
-        if(random.random()>0.5):
-            child = sequenceA
-            
-            for i in range(random.randrange(0,int(0.75*LENGTH),step=1)):
-                child[i] = sequenceB[i]
-                if(random.random()<0.1):
-                    child[i].note = mutateNote(child[i].note)
-        else:
-            child = sequenceB
-            for i in range(random.randrange(0,int(0.75*LENGTH),step=1)):
-                child[i] = sequenceA[i]
-                if(random.random()<0.1):
-                    child[i].note = mutateNote(child[i].note)
-    
-    i=0
-    for each in spawned:
-        array[i] = each
-        i += 1
-    return'''
 
 def crossCombine(sequenceA,sequenceB):
     """Generates an list of new midi sequences based on the parent sequences"""
@@ -338,110 +310,129 @@ def crossCombine(sequenceA,sequenceB):
         timeP_A = 0
         timeP_B = 0
         start_A = -1
-        end_A = int
-        start_B = -1
-        end_B = int
+        rangeStart = random.randint(0,LENGTH)
+        rangeEnd = random.randint(rangeStart,LENGTH)
+
+        crossover = []
         if(random.random()>0.5):
-            child = sequenceA
+            child = array[len(array)-2]
+            sequenceB = array[len(array)-2]
             
-            for j in range(random.randrange(0,int(0.75*LENGTH),step=1)): #iterate through sequence betweeen cross points
+            for j in range(rangeStart,rangeEnd): #iterate through sequence betweeen cross points
                 if hasattr(child[j],'type'):
                     if child[j].type == 'note_on':
                         timeP_A += child[j+1].time                           #track time elapsed in sequence A
                         if start_A < 0:
                             start_A = j
-                        end_A = j
+
                 if hasattr(sequenceB[j],'type'):
                     if sequenceB[j].type =='note_on':
                         timeP_B += sequenceB[j+1].time                       #track time elapsed in sequence B
-                        if start_B < 0:
-                            start_B = j
-                        end_B = j
-            
-            j = start_B
+                        crossover.append(sequenceB[j])
+                        crossover.append(sequenceB[j+1])
+                        for each in range(int(sequenceB[j+1].time/TICKS-2)):
+                            crossover.append('')
+
+            #crossover mutation
+            if random.random() > 0.01:
+                quantize2key(crossover,scaleDict[random.randint(0,7)],KEY)
             elapsed = 0
             if timeP_B > timeP_A:
-                while j <= end_B:                                            #start combination
-                    child[start_A] = sequenceB[start_B]
+                for j in crossover:                                            #start combination
+                    child[start_A] = j
                     start_A += 1
-                    start_B +=1
                     if hasattr(child[start_A],"time"):
-                        elapsed += child[start_A].time
-                        if elapsed > timeP_A:
-                            child[start_A].time = elapsed - timeP_A
-            while j <= end_A:                                               #start combination
-                    child[start_A] = sequenceB[start_B]
+                        if child[start_A].type == 'note_off':
+                            elapsed += child[start_A].time
+                            if elapsed > timeP_A:
+                                child[start_A].time = child[start_A].time - (elapsed-timeP_A)
+                                break
+            else:
+                for j in crossover:                                               #start combination
+                    child[start_A] = j
                     start_A += 1
-                    start_B +=1
-                    if hasattr(child[start_A],"time"):
-                        elapsed += child[start_A].time
-                        if elapsed > timeP_B:
-                            child[start_A].time = elapsed - timeP_B
+                    try:
+                        if hasattr(child[start_A],"time"):
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                if elapsed > timeP_A:
+                                    child[start_A].time = child[start_A].time + (timeP_A - elapsed)
+                                    break
+                    except:
+                        print("End of Crossover")
+                                
                     
                 
                 
 
                 
         else:
-            child = sequenceB
-            sequenceB = sequenceA
+            child = array[len(array)-1]
+            sequenceB = array[len(array)-2]
             
-            for j in range(random.randrange(0,int(0.75*LENGTH),step=1)): #iterate through sequence betweeen cross points
+            for j in range(rangeStart,rangeEnd): #iterate through sequence betweeen cross points
                 if hasattr(child[j],'type'):
                     if child[j].type == 'note_on':
                         timeP_A += child[j+1].time                           #track time elapsed in sequence A
                         if start_A < 0:
                             start_A = j
-                        end_A = j
                 if hasattr(sequenceB[j],'type'):
                     if sequenceB[j].type =='note_on':
                         timeP_B += sequenceB[j+1].time                       #track time elapsed in sequence B
-                        if start_B < 0:
-                            start_B = j
-                        end_B = j
+                        crossover.append(sequenceB[j])
+                        crossover.append(sequenceB[j+1])
+                        for each in range(int(sequenceB[j+1].time/TICKS-2)):
+                            crossover.append('')
             
-            j = start_B
+            if random.random() > 0.01:
+                quantize2key(crossover,scaleDict[random.randint(0,7)],KEY)
             elapsed = 0
             if timeP_B > timeP_A:
                 try:
-                    while j <= end_B:                                            #start combination
-                        child[start_A] = sequenceB[start_B]
+                    for j in crossover:                                            #start combination
+                        child[start_A] = j
                         start_A += 1
-                        start_B +=1
+                    
                         if hasattr(child[start_A],"time"):
-                            elapsed += child[start_A].time
-                            if elapsed > timeP_A:
-                                child[start_A].time = elapsed - timeP_A
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                if elapsed > timeP_A:
+                                    child[start_A].time = child[start_A].time - (elapsed-timeP_A)
+                                    for each in range(int(child[start_A].time/TICKS-2)):
+                                        crossover.append('')
+
                 except:
-                    for x in range(start_A,end_A):
-                        child[x] = ''
+                    print("End of crossover")
             else:
-                try:
-                    while j <= end_A:                                               #start combination
-                        child[start_A] = sequenceB[start_B]
-                        start_A += 1
-                        start_B +=1
+                for j in crossover:                                               #start combination
+                    child[start_A] = j
+                    start_A += 1
+                    try:
                         if hasattr(child[start_A],"time"):
-                            elapsed += child[start_A].time
-                            if elapsed > timeP_B:
-                                child[start_A].time = elapsed - timeP_B
-                except:
-                    for x in range(start_A,end_A):
-                        child[x] = ''
-            spawned.append(child)
-    
-    i=0
-    for each in spawned:
-        array[i] = each
-        i += 1
-    return
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                #if elapsed > timeP_B:
+                                #    child[start_A].time = child[start_A].time + (timeP_B - elapsed)
+                    except:
+                        print("End of crossover")
+        
+        counter = 0
+        for each in child:
+            counter += 1
+            if random.random() < 0.02 and hasattr(each,"note"):
+                if each.type == 'note_on':
+                    each.note = mutateNote(each.note)
+                    child[counter].note = each.note
+        
+        array[i]=child
+    return 1
 
 
 def main():
     """Main Code loop containing the GUI"""
     window = Tk()
     window.title("Evolutionary Composer")
-    window.geometry("650x250")
+    window.geometry("875x250")
     
     player = Player()
     player.open_stream()
