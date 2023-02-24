@@ -65,7 +65,7 @@ intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 BPM = 160
 TEMPO = int(((60/BPM))*1000000)
 SIZE = 7           #no. of sequences
-LENGTH = 64       #no. of subdivisions / genome length
+LENGTH = 96       #no. of subdivisions / genome length
 TK = 480
 TICKS = int(mido.second2tick(15/(2*BPM),TK,TEMPO))
 KEY = 0
@@ -296,6 +296,25 @@ def evolve(sequenceA):
         array[i] = each
         i += 1
 
+def difference():
+    for each in range(len(array)-2):
+        aDiff = 0
+        bDiff = 0
+        counter = 0
+        for msg in array[each]:
+            try:
+                if msg == array[len(array)-2][counter]:
+                    aDiff += 1
+            except:
+                pass
+            try:
+                if msg == array[len(array)-1][counter]:
+                    bDiff += 1
+            except:
+                pass
+            counter +=1
+        print(aDiff / LENGTH)
+        print(bDiff / LENGTH)
 
 
 def crossCombine(sequenceA,sequenceB):
@@ -305,18 +324,18 @@ def crossCombine(sequenceA,sequenceB):
         
 
     spawned = []
-    for i in range(SIZE-2):
+    for i in range(SIZE-2):                         #crossover
         child = []
         timeP_A = 0
         timeP_B = 0
         start_A = -1
-        rangeStart = random.randint(0,LENGTH)
+        rangeStart = random.randint(0,int(LENGTH*0.75))
         rangeEnd = random.randint(rangeStart,LENGTH)
 
         crossover = []
         if(random.random()>0.5):
             child = array[len(array)-2]
-            sequenceB = array[len(array)-2]
+            sequenceB = array[len(array)-1]
             
             for j in range(rangeStart,rangeEnd): #iterate through sequence betweeen cross points
                 if hasattr(child[j],'type'):
@@ -339,19 +358,24 @@ def crossCombine(sequenceA,sequenceB):
             elapsed = 0
             if timeP_B > timeP_A:
                 for j in crossover:                                            #start combination
-                    child[start_A] = j
-                    start_A += 1
-                    if hasattr(child[start_A],"time"):
-                        if child[start_A].type == 'note_off':
-                            elapsed += child[start_A].time
-                            if elapsed > timeP_A:
-                                child[start_A].time = child[start_A].time - (elapsed-timeP_A)
-                                break
+                    try:
+                        child[start_A] = j
+                        start_A += 1
+                    
+                        if hasattr(child[start_A],"time"):
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                if elapsed > timeP_A:
+                                    child[start_A].time = child[start_A].time - (elapsed-timeP_A)
+                                    break
+                    except:
+                        print("Max Length Reached")
             else:
                 for j in crossover:                                               #start combination
-                    child[start_A] = j
-                    start_A += 1
                     try:
+                        child[start_A] = j
+                        start_A += 1
+                    
                         if hasattr(child[start_A],"time"):
                             if child[start_A].type == 'note_off':
                                 elapsed += child[start_A].time
@@ -405,9 +429,10 @@ def crossCombine(sequenceA,sequenceB):
                     print("End of crossover")
             else:
                 for j in crossover:                                               #start combination
-                    child[start_A] = j
-                    start_A += 1
                     try:
+                        child[start_A] = j
+                        start_A += 1
+                    
                         if hasattr(child[start_A],"time"):
                             if child[start_A].type == 'note_off':
                                 elapsed += child[start_A].time
@@ -425,6 +450,7 @@ def crossCombine(sequenceA,sequenceB):
                     child[counter].note = each.note
         
         array[i]=child
+    difference()
     return 1
 
 
