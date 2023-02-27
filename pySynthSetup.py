@@ -343,39 +343,46 @@ def difference_(a: list, b: list, c: list):
         print(bDiff / LENGTH)
 
 
-def crossCombine(sequenceA,sequenceB):
+def crossCombine(sequenceA: list,sequenceB: list):
     """Generates an list of new midi sequences based on the parent sequences"""
-    array[len(array)-1] = sequenceB
-    array[len(array)-2] = sequenceA
+    array[SIZE-2] = list(each for each in sequenceA)
+    array[SIZE -1] = list(each for each in sequenceB)
+    m = list(each for each in sequenceB)
         
     def repair():
         pass
 
     for arrayIndex in range(SIZE-2):                         #crossover
-        m = array[SIZE -1]
-        child = array[SIZE-2]
-        if random.random() >= 0.5:
+        
+        array[arrayIndex] = list(each for each in sequenceA)
+        """if random.random() >= 0.5:
             m = array[SIZE - 2]
-            child = array[SIZE -1]
+            array[arrayIndex] = array[SIZE -1]"""
 
         switched = []
+        instead = []
         for i in range(LENGTH-1):
-            if random.random() >= 0.3:
-                child[i] = m[i]
+            chanceChange = random.random()
+            if chanceChange >= 0.3:
+                array[arrayIndex][i] = m[i]
                 if hasattr(m[i],"type"):
                     if m[i].type == "note_on":
-                        child[i+1] = m[i+1]
+                        if hasattr(array[arrayIndex][i+1],"note"):
+                            instead.append(array[arrayIndex][i+1].note)
+                        array[arrayIndex][i+1] = m[i+1]
                         switched.append(m[i].note)
                         if random.random() < 0.01:
                             try:
-                                child[i].note = mutateNote(child[i].note)
-                                child[i+1].note = child[i].note
+                                array[arrayIndex][i].note = mutateNote(array[arrayIndex][i].note)
+                                array[arrayIndex][i+1].note = array[arrayIndex][i].note
                             except:
                                 print("i = "+ str(i))
-                                print(child[i].note)
-                                print(child[i+1])
-        
-        array[arrayIndex] = child
+                                print(array[arrayIndex][i].note)
+                                print(array[arrayIndex][i+1])
+            else:
+                if hasattr(array[arrayIndex][i],"type"):
+                    if array[arrayIndex][i].type == "note_on":
+                        i += 1
     difference()
     return 1
 
