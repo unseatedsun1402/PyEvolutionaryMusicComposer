@@ -8,6 +8,12 @@ import math
 from tkinter import *
 from tkinter import filedialog as fd
 from functools import partial
+import sys
+
+
+def stdErr(*args, **kwargs):
+    """print to error console"""
+    print(*args, file= sys.stderr, *kwargs)
 
 """Definitions
 ###
@@ -99,7 +105,7 @@ def quantize2key_(sequence: list,scale: list):
             else:
                 key_center += 1
         except:
-            print("Non Message Type")
+            stdErr("Non Message Type")
     print("Key Centre is",noteDict[key_center])
     for each in sequence:
         try:
@@ -115,7 +121,7 @@ def quantize2key_(sequence: list,scale: list):
                 else:
                     quantized = True
         except:
-            print("Non Message Type")
+            stdErr("Non Message Type")
 
 def quantize2key(sequence: list,scale: list,key_center: str):
     """Transposes notes in sequence to fit into the passed scale list"""
@@ -138,7 +144,7 @@ def quantize2key(sequence: list,scale: list,key_center: str):
                 else:
                     quantized = True
         except Exception:
-            print("Non Message Type")
+            stdErr("Non Message Type")
 
 
 
@@ -249,11 +255,12 @@ def score(sequence):
             interval = (noteA - noteB)
             if interval < 0:
                 interval = 12 + interval
-            print(intervalDict[interval])
+            #print(intervalDict[interval])
             cost += intervalCost[interval]
         except:
-            print("Non Message Type")
-    print('cost', cost)
+            #stdErr("Non Message Type")
+            pass
+    print('cost ', cost, file=sys.stdout)
 
 def mutateSeq(sequence):
     for each in sequence:
@@ -350,11 +357,26 @@ def crossCombine(sequenceA: list,sequenceB: list):
     m = list(each for each in sequenceB)
         
     def repair():
-        pass
+        for each in array:
+            count = 1
+            while count <= LENGTH-1:
+                msg = each[count-1]
+                if hasattr(msg,"type"):
+                    if msg.type == "note_on":
+                        if hasattr(each[count],"type") and each[count].type == "note_on":
+                            each[count] = mido.Message("note_off",note = msg.note, velocity = msg.velocity, time = 2*TICKS)
+                        elif not hasattr(each[count],"type"):
+                            each[count] = mido.Message("note_off",note = msg.note, velocity = msg.velocity, time = 2*TICKS)
+                count += 1
+
 
     for arrayIndex in range(SIZE-2):                         #crossover
-        
-        array[arrayIndex] = list(each for each in sequenceA)
+        if random.random() > 0.5:
+            array[arrayIndex] = list(each for each in sequenceA)
+            m = list(each for each in sequenceB)
+        else:
+            array[arrayIndex] = list(each for each in sequenceB)
+            m = list(each for each in sequenceA)
         """if random.random() >= 0.5:
             m = array[SIZE - 2]
             array[arrayIndex] = array[SIZE -1]"""
@@ -376,13 +398,14 @@ def crossCombine(sequenceA: list,sequenceB: list):
                                 array[arrayIndex][i].note = mutateNote(array[arrayIndex][i].note)
                                 array[arrayIndex][i+1].note = array[arrayIndex][i].note
                             except:
-                                print("i = "+ str(i))
-                                print(array[arrayIndex][i].note)
-                                print(array[arrayIndex][i+1])
+                                #print("i = "+ str(i))
+                                #print(array[arrayIndex][i].note)
+                                stdErr("Mutation Error",(array[arrayIndex][i]))
             else:
                 if hasattr(array[arrayIndex][i],"type"):
                     if array[arrayIndex][i].type == "note_on":
                         i += 1
+    repair()
     difference()
     return 1
 
