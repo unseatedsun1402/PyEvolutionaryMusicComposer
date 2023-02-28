@@ -342,48 +342,128 @@ def difference_(a: list, b: list, c: list):
         print(aDiff / LENGTH)
         print(bDiff / LENGTH)
 
-
-def crossCombine(sequenceA: list,sequenceB: list):
+def crossCombine(sequenceA,sequenceB):
     """Generates an list of new midi sequences based on the parent sequences"""
+    array[SIZE-1] = list(each for each in sequenceB)
     array[SIZE-2] = list(each for each in sequenceA)
-    array[SIZE -1] = list(each for each in sequenceB)
-    m = list(each for each in sequenceB)
-        
-    def repair():
-        pass
+    for i in range(SIZE-3):
+        timeP_A = 0
+        timeP_B = 0
+        start_A = -1
+        rangeStart = random.randint(0,LENGTH)
+        rangeEnd = random.randint(rangeStart,LENGTH)
 
-    for arrayIndex in range(SIZE-2):                         #crossover
-        
-        array[arrayIndex] = list(each for each in sequenceA)
-        """if random.random() >= 0.5:
-            m = array[SIZE - 2]
-            array[arrayIndex] = array[SIZE -1]"""
+        crossover = []
+        if(random.random()>0.5):
+            child = list(each for each in sequenceA)
+            sequenceB = list(each for each in sequenceB)
 
-        switched = []
-        instead = []
-        for i in range(LENGTH-1):
-            chanceChange = random.random()
-            if chanceChange >= 0.3:
-                array[arrayIndex][i] = m[i]
-                if hasattr(m[i],"type"):
-                    if m[i].type == "note_on":
-                        if hasattr(array[arrayIndex][i+1],"note"):
-                            instead.append(array[arrayIndex][i+1].note)
-                        array[arrayIndex][i+1] = m[i+1]
-                        switched.append(m[i].note)
-                        if random.random() < 0.01:
-                            try:
-                                array[arrayIndex][i].note = mutateNote(array[arrayIndex][i].note)
-                                array[arrayIndex][i+1].note = array[arrayIndex][i].note
-                            except:
-                                print("i = "+ str(i))
-                                print(array[arrayIndex][i].note)
-                                print(array[arrayIndex][i+1])
+            for j in range(rangeStart,rangeEnd): #iterate through sequence betweeen cross points
+                if hasattr(child[j],'type'):
+                    if child[j].type == 'note_on':
+                        timeP_A += child[j+1].time                           #track time elapsed in sequence A
+                        if start_A < 0:
+                            start_A = j
+
+                if hasattr(sequenceB[j],'type'):
+                    if sequenceB[j].type =='note_on':
+                        timeP_B += sequenceB[j+1].time                       #track time elapsed in sequence B
+                        crossover.append(sequenceB[j])
+                        crossover.append(sequenceB[j+1])
+                        for each in range(int(sequenceB[j+1].time/TICKS-2)):
+                            crossover.append('')
+
+                #crossover mutation
+                if random.random() > 0.01:
+                    quantize2key(crossover,scaleDict[random.randint(0,7)],KEY)
+                elapsed = 0
+                if timeP_B > timeP_A:
+                    for j in crossover:
+                        try:                                            #start combination
+                            child[start_A] = j
+                            start_A += 1
+                            if hasattr(child[start_A],"time"):
+                                if child[start_A].type == 'note_off':
+                                    elapsed += child[start_A].time
+                                    if elapsed > timeP_A:
+                                        child[start_A].time = child[start_A].time - (elapsed-timeP_A)
+                                        break
+                        except:
+                            pass
+                else:
+                    for j in crossover:                                               #start combination
+                        try:
+                            child[start_A] = j
+                            start_A += 1
+                        
+                            if hasattr(child[start_A],"time"):
+                                if child[start_A].type == 'note_off':
+                                    elapsed += child[start_A].time
+                                    if elapsed > timeP_A:
+                                        child[start_A].time = child[start_A].time + (timeP_A - elapsed)
+                                        break
+                        except:
+                            print("End of Crossover")
+        
+        else:
+            child = list(each for each in sequenceB)
+            sequenceB = list(each for each in sequenceA)
+
+            for j in range(rangeStart,rangeEnd): #iterate through sequence betweeen cross points
+                if hasattr(child[j],'type'):
+                    if child[j].type == 'note_on':
+                        timeP_A += child[j+1].time                           #track time elapsed in sequence A
+                        if start_A < 0:
+                            start_A = j
+                if hasattr(sequenceB[j],'type'):
+                    if sequenceB[j].type =='note_on':
+                        timeP_B += sequenceB[j+1].time                       #track time elapsed in sequence B
+                        crossover.append(sequenceB[j])
+                        crossover.append(sequenceB[j+1])
+                        for each in range(int(sequenceB[j+1].time/TICKS-2)):
+                            crossover.append('')
+
+            if random.random() > 0.01:
+                quantize2key(crossover,scaleDict[random.randint(0,7)],KEY)
+            elapsed = 0
+            if timeP_B > timeP_A:
+                try:
+                    for j in crossover:                                       #start combination
+                        child[start_A] = j
+                        start_A += 1
+
+                        if hasattr(child[start_A],"time"):
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                if elapsed > timeP_A:
+                                    child[start_A].time = child[start_A].time - (elapsed-timeP_A)
+                                    for each in range(int(child[start_A].time/TICKS-2)):
+                                        crossover.append('')
+
+                except:
+                    print("End of crossover")
             else:
-                if hasattr(array[arrayIndex][i],"type"):
-                    if array[arrayIndex][i].type == "note_on":
-                        i += 1
-    difference()
+                for j in crossover:                                               #start combination
+                    child[start_A] = j
+                    start_A += 1
+                    try:
+                        if hasattr(child[start_A],"time"):
+                            if child[start_A].type == 'note_off':
+                                elapsed += child[start_A].time
+                                #if elapsed > timeP_B:
+                                #    child[start_A].time = child[start_A].time + (timeP_B - elapsed)
+                    except:
+                        print("End of crossover")
+
+        counter = 0
+        for each in child:
+            counter += 1
+            if random.random() < 0.01 and hasattr(each,"note"):
+                if each.type == 'note_on':
+                    each.note = mutateNote(each.note)
+                    child[counter].note = each.note
+
+        array[i]=list(each for each in child)
     return 1
 
 def main():
