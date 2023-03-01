@@ -48,13 +48,13 @@ aeolian  = [0,2,3,5,7,8,10]
 locrian  = [0,1,3,5,6,8,10]
 
 scaleDict = {0:major,
-            1:dorian,
-            2:phrygian,
-            3:lydian,
-            4:mix,
-            5:aeolian,
-            6:locrian,
-            7:minor}
+            1:minor,
+            2:dorian,
+            3:phrygian,
+            4:lydian,
+            5:mix,
+            6:aeolian,
+            7:locrian}
             
 intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
     4:'major',5:'perfect',6:'augmented',7:'perfect',8:'minor',
@@ -90,7 +90,7 @@ def quantize2key_(sequence: list,scale: list):
     quantized = False
     key_center_found = True
     key_center = KEY
-    scale = scaleDict[random.randint(0,7)]
+    scale = scaleDict[random.randint(0,1)]
     while not key_center_found:
         try:
             if not sequence[key_center].velocity == 0:
@@ -187,10 +187,19 @@ def __generate_random_notes():
     rVelocity = int
     rNote = int
     genome = LENGTH
+    oldNote = int
     while len(sequence) < LENGTH:
         if random.random() > 0.1:
             rVelocity = random.randint(50,100)
             rNote = random.randint(45,71)
+            octave = rNote // 12
+            try:
+                if oldNote // 12 < (rNote // 12):
+                    rNote -= 12
+                elif oldNote // 12 > (rNote // 12):
+                    rNote += 12
+            except:
+                pass
         else:
             rVelocity = (0)
             rNote = (0)
@@ -211,6 +220,7 @@ def __generate_random_notes():
         genome -= int(time/TICKS)
         for each in range(int(time/TICKS)-2):
             sequence.append('')
+        oldNote = rNote
     return sequence
 
 def harmonize(note,interval):
@@ -258,7 +268,7 @@ def score(sequence):
 def mutateSeq(sequence):
     for each in sequence:
         if random.random() > 0.75:
-            scale = int(random.uniform(0.0,8.0) // 1)
+            scale = random.randint(0,1)
             quantize2key_(sequence,scaleDict[scale])
 
 def mutateNote(note: int):
@@ -285,7 +295,7 @@ def evolve(sequenceA):
 
     spawned = []
     for sequenceB in newGeneration:
-        quantize2key(sequenceB,scaleDict[int(random.randrange(0,7))],sequenceA[0].note%12)
+        quantize2key(sequenceB,scaleDict[int(random.randrange(0,1))],sequenceA[0].note%12)
         split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
         childAB = []
         if(random.random() < 0.5):
@@ -348,9 +358,6 @@ def crossCombine(sequenceA: list,sequenceB: list):
     array[SIZE-2] = list(each for each in sequenceA)
     array[SIZE -1] = list(each for each in sequenceB)
     m = list(each for each in sequenceB)
-        
-    def repair():
-        pass
 
     for arrayIndex in range(SIZE-2):                         #crossover
         
@@ -370,6 +377,10 @@ def crossCombine(sequenceA: list,sequenceB: list):
                         if hasattr(array[arrayIndex][i+1],"note"):
                             instead.append(array[arrayIndex][i+1].note)
                         array[arrayIndex][i+1] = m[i+1]
+                        tMinus = int(m[i+1].time)
+                        while tMinus > TICKS*2:
+                            array[arrayIndex][i +int(tMinus/(TICKS*2))] = ''
+                            tMinus -= TICKS*2
                         switched.append(m[i].note)
                         if random.random() < 0.01:
                             try:
