@@ -62,24 +62,24 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
 
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
-BPM = 160
-TEMPO = int(((60/BPM))*1000000)
-SIZE = 7           #no. of sequences
-LENGTH = 64       #no. of subdivisions / genome length
+_bpm = 160
+_tempo = int(((60/_bpm))*1000000)
+_size = 7           #no. of sequences
+_length = 64       #no. of subdivisions / genome length
 TK = 480
-TICKS = int(mido.second2tick(15/(2*BPM),TK,TEMPO))
+_ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
 KEY = 0
 
 
 
-def midi2note(msg):
+def midi2note(msg: mido.Message):
     """Turns mido midi messages into string note value (e.g. xA3)"""
     val = msg.note
 
     note = noteDict[val%12]+str(val//12)
     return note
 
-def mNote2note(val):
+def mNote2note(val: int):
     """Turns midi note value (int) into a string note value (e.g. A3)"""
     note = noteDict[val%12]+str(val//12)
     return note
@@ -91,6 +91,15 @@ def quantize2key_(sequence: list,scale: list):
     key_center_found = True
     key_center = KEY
     scale = scaleDict[random.randint(0,1)]
+    match scale:
+        case 0:
+            key_signature = mNote2note(KEY)[0]
+        case 1: 
+            key_signature = mNote2note(KEY)[0] + 'm'
+        case _:
+            key_signature = mNote2note(KEY)[0]
+    
+
     while not key_center_found:
         try:
             if not sequence[key_center].velocity == 0:
@@ -116,6 +125,7 @@ def quantize2key_(sequence: list,scale: list):
                     quantized = True
         except:
             print("Non Message Type")
+    sequence.append(mido.MetaMessage('key_signature',key = key_signature))
 
 def quantize2key(sequence: list,scale: list,key_center: str):
     """Transposes notes in sequence to fit into the passed scale list"""
@@ -166,7 +176,7 @@ def sequence2midi(sequence):
     midiSequence = mido.MidiFile()
     track = mido.MidiTrack()
     metaTsg = mido.MetaMessage('time_signature', numerator=4, denominator=4, clocks_per_click=24, notated_32nd_notes_per_beat=8,time=0)
-    metaTmp = mido.MetaMessage('set_tempo',tempo = TEMPO, time = 0)
+    metaTmp = mido.MetaMessage('set_tempo',tempo = _tempo, time = 0)
     track.append(metaTsg)
     track.append(metaTmp)
     for note in sequence:
@@ -187,9 +197,9 @@ def __generate_random_notes():
     msg = mido.Message
     rVelocity = int
     rNote = int
-    genome = LENGTH
+    genome = _length
     oldNote = int
-    while len(sequence) < LENGTH:
+    while len(sequence) < _length:
         if random.random() > 0.1:
             rVelocity = random.randint(50,100)
             rNote = random.randint(45,71)
@@ -208,9 +218,9 @@ def __generate_random_notes():
         length = random.randint(2,4)
         length *= 2
         
-        time = length*TICKS
-        if time >= ((genome*TICKS)-time):
-            time = int(genome*TICKS)
+        time = length*_ticks
+        if time >= ((genome*_ticks)-time):
+            time = int(genome*_ticks)
         
         msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = 0)
         sequence.append(msg)
@@ -218,8 +228,8 @@ def __generate_random_notes():
         msg = mido.Message('note_off',note=rNote,velocity = rVelocity, time = time)
         sequence.append(msg)
         
-        genome -= int(time/TICKS)
-        for each in range(int(time/TICKS)-2):
+        genome -= int(time/_ticks)
+        for each in range(int(time/_ticks)-2):
             sequence.append('')
         oldNote = rNote
     return sequence
@@ -245,7 +255,7 @@ def harmonize(note,interval):
 
         tonic = part1+str(part2)
         chord = [root,tonic]
-        player.play_wave(synth.generate_chord(chord,length=(60/TEMPO)))
+        player.play_wave(synth.generate_chord(chord,length=(60/_tempo)))
         
 
 def score(sequence):
@@ -271,7 +281,7 @@ def mutateSeq(sequence):
     for each in sequence:
         if random.random() > 0.75:
             scale = random.randint(0,1)
-            quantize2key_(sequence,scaleDict[scale])
+            #quantize2key_(sequence,scaleDict[scale])
 
 def mutateNote(note: int):
     note += random.randint(-11,11)
@@ -279,7 +289,7 @@ def mutateNote(note: int):
 
 def create_selection_of_sequences():
     """Returns a list of midi note sequences"""
-    for i in range(SIZE):
+    for i in range(_size):
         array[i] = __generate_random_notes()
         quantize2key_(array[i],major)
         mutateSeq(array[i])
@@ -290,7 +300,7 @@ def evolve(sequenceA):
     """Generates an list of new midi sequences based on the passed sequence"""
     swap = sequenceA
     newGeneration = create_selection_of_sequences()
-    if len(array)-1 == SIZE:
+    if len(array)-1 == _size:
         array.append(sequenceA)
     else:
         array[len(array)-1] = sequenceA
@@ -332,8 +342,8 @@ def difference():
             except:
                 pass
             counter +=1
-        print(aDiff / LENGTH)
-        print(bDiff / LENGTH)
+        print(aDiff / _length)
+        print(bDiff / _length)
 
 def difference_(a: list, b: list, c: list):
         aDiff = 0
@@ -351,8 +361,8 @@ def difference_(a: list, b: list, c: list):
             except:
                 pass
             counter +=1
-        print(aDiff / LENGTH)
-        print(bDiff / LENGTH)
+        print(aDiff / _length)
+        print(bDiff / _length)
 
 def repair(sequence: list):
     notesOpen = []
@@ -370,27 +380,27 @@ def repair(sequence: list):
             openFlag = False
     count = 0
     for each in notesOpen:
-        sequence[LENGTH-1-count]= mido.Message("note_off",note = each, velocity = 0, time = 0)
+        sequence[_length-1-count]= mido.Message("note_off",note = each, velocity = 0, time = 0)
         count -= 1
     print(notesOpen)
 
 
 def crossCombine(sequenceA: list,sequenceB: list):
     """Generates an list of new midi sequences based on the parent sequences"""
-    array[SIZE-2] = list(each for each in sequenceA)
-    array[SIZE -1] = list(each for each in sequenceB)
+    array[_size-2] = list(each for each in sequenceA)
+    array[_size -1] = list(each for each in sequenceB)
     m = list(each for each in sequenceB)
 
-    for arrayIndex in range(SIZE-2):                         #crossover
+    for arrayIndex in range(_size-2):                         #crossover
         
         array[arrayIndex] = list(each for each in sequenceA)
         """if random.random() >= 0.5:
-            m = array[SIZE - 2]
-            array[arrayIndex] = array[SIZE -1]"""
+            m = array[_size - 2]
+            array[arrayIndex] = array[_size -1]"""
 
         switched = []
         instead = []
-        for i in range(LENGTH-1):
+        for i in range(_length-1):
             chanceChange = random.random()
             if chanceChange > 0.3:
                 array[arrayIndex][i] = m[i]
@@ -399,10 +409,13 @@ def crossCombine(sequenceA: list,sequenceB: list):
                         if hasattr(array[arrayIndex][i+1],"note"):
                             instead.append(array[arrayIndex][i+1].note)
                         array[arrayIndex][i+1] = m[i+1]
-                        tMinus = int(m[i+1].time)
-                        while tMinus > TICKS*2:
-                            array[arrayIndex][i +int(tMinus/(TICKS*2))] = ''
-                            tMinus -= TICKS*2
+                        try:
+                            tMinus = int(m[i+1].time)
+                            while tMinus > _ticks*2:
+                                array[arrayIndex][i +int(tMinus/(_ticks*2))] = ''
+                                tMinus -= _ticks*2
+                        except:
+                            pass
                         switched.append(m[i].note)
                         if random.random() < 0.01:
                             try:
@@ -432,8 +445,8 @@ def main():
     player.open_stream()
     synth  = Synthesizer(osc1_waveform=Waveform.triangle, osc1_volume=1.0, use_osc2=True, osc2_waveform=Waveform.sine, osc2_volume=0.8, osc2_freq_transpose=2)
 
-    buttonItems = tuple(i for i in range(SIZE))
-    for i in range(SIZE-1):
+    buttonItems = tuple(i for i in range(_size))
+    for i in range(_size-1):
         array.append('')
     chord = ["C3", "E3", "G3"]
 
@@ -494,16 +507,28 @@ def main():
 
         save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside1.get())))
         save_button.grid(row=5,column = 2)
-
     
+    def setTempo(val: int):
+        _bpm = val
+        _tempo = int(((60/_bpm))*1000000)
     
 
     btn = Button(window, text = "Click me" ,
                 fg = "red", command=clicked)
     # set Button grid
     btn.grid(column=3, row=0)
+        
+    slowtmp = Button(window, text="Slow", command=lambda: setTempo(60))
+    slowtmp.grid(column=3,row = 3)
+    
+    medtmp = Button(window, text="Andante", command=lambda: setTempo(100))
+    medtmp.grid(column=3,row = 4)
+
+    fasttmp = Button(window, text="Fast", command=lambda: setTempo(180))
+    fasttmp.grid(column=3,row = 5)
 
     window.mainloop()
+
 
 
 
@@ -546,9 +571,9 @@ def playSequence(choice: int):
             if hasattr(msg,"velocity"):
                 #output.send(msg)
                 if msg.velocity == 0:
-                    time.sleep(mido.tick2second(msg.time,TK,TEMPO))
+                    time.sleep(mido.tick2second(msg.time,TK,_tempo))
                 else:
-                    time.sleep(mido.tick2second(msg.time,TK,TEMPO))
+                    time.sleep(mido.tick2second(msg.time,TK,_tempo))
                     internalMidi.send(msg)
                     #harmonize(msg.note,interval)
                     #interval = msg.note
@@ -566,14 +591,14 @@ def test():
     midiArray = list
     for i, track in enumerate(testMidi.tracks):
         print('Track {}: {}'.format(i, track.name))
-        tempo = TEMPO
+        tempo = _tempo
         for msg in track:
             if msg.is_meta:
                 if msg.type == 'set_tempo':
                     tempo = msg.tempo/1000
                 continue
             else:
-                time.sleep(msg.time/TEMPO)
+                time.sleep(msg.time/_tempo)
                 output.send(msg)
                 #print(msg)
     print(midiArray)
