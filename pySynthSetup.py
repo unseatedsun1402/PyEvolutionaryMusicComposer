@@ -138,7 +138,8 @@ def quantize2key(sequence: list,scale: list,key_center: str):
                 else:
                     quantized = True
         except Exception:
-            print("Non Message Type")
+            #print("Non Message Type")
+            pass
 
 
 
@@ -259,10 +260,11 @@ def score(sequence):
             interval = (noteA - noteB)
             if interval < 0:
                 interval = 12 + interval
-            print(intervalDict[interval])
+            #print(intervalDict[interval])
             cost += intervalCost[interval]
         except:
-            print("Non Message Type")
+            #print("Non Message Type")
+            pass
     print('cost', cost)
 
 def mutateSeq(sequence):
@@ -352,6 +354,26 @@ def difference_(a: list, b: list, c: list):
         print(aDiff / LENGTH)
         print(bDiff / LENGTH)
 
+def repair(sequence: list):
+    notesOpen = []
+    openFlag = False
+    for each in sequence:
+        if hasattr(each,"type"):
+            if each.type == "note_on":
+                notesOpen.append(each.note)
+                openFlag = True
+            elif each.type == "note_off":
+                if each.note in notesOpen:
+                    notesOpen.pop(notesOpen.index(each.note))
+            if each.type == "note_off" and not openFlag:
+                each = ''
+            openFlag = False
+    count = 0
+    for each in notesOpen:
+        sequence[LENGTH-1-count]= mido.Message("note_off",note = each, velocity = 0, time = 0)
+        count -= 1
+    print(notesOpen)
+
 
 def crossCombine(sequenceA: list,sequenceB: list):
     """Generates an list of new midi sequences based on the parent sequences"""
@@ -370,7 +392,7 @@ def crossCombine(sequenceA: list,sequenceB: list):
         instead = []
         for i in range(LENGTH-1):
             chanceChange = random.random()
-            if chanceChange >= 0.3:
+            if chanceChange > 0.3:
                 array[arrayIndex][i] = m[i]
                 if hasattr(m[i],"type"):
                     if m[i].type == "note_on":
@@ -387,14 +409,17 @@ def crossCombine(sequenceA: list,sequenceB: list):
                                 array[arrayIndex][i].note = mutateNote(array[arrayIndex][i].note)
                                 array[arrayIndex][i+1].note = array[arrayIndex][i].note
                             except:
-                                print("i = "+ str(i))
-                                print(array[arrayIndex][i].note)
-                                print(array[arrayIndex][i+1])
+                                #print("i = "+ str(i))
+                                #print(array[arrayIndex][i].note)
+                                #print(array[arrayIndex][i+1])
+                                pass
             else:
                 if hasattr(array[arrayIndex][i],"type"):
                     if array[arrayIndex][i].type == "note_on":
                         i += 1
+            repair(array[arrayIndex])
     difference()
+    
     return 1
 
 def main():
@@ -463,7 +488,8 @@ def main():
             try:
                 midFile.save(filename)
             except Exception:
-                print("Error")
+                pass
+                #print("Error")
             
 
         save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside1.get())))
