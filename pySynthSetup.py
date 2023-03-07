@@ -8,6 +8,7 @@ import math
 from tkinter import *
 from tkinter import filedialog as fd
 from functools import partial
+import GaSequence
 
 """Definitions
 ###
@@ -70,6 +71,7 @@ TK = 480
 _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
 KEY = 0
 
+motifs = {}
 
 
 def midi2note(msg: mido.Message):
@@ -191,48 +193,7 @@ def sequence2midi(sequence):
 
 
 
-def __generate_random_notes():
-    """Generates a random series of notes and returns them as a mido message sequence"""
-    sequence = []
-    msg = mido.Message
-    rVelocity = int
-    rNote = int
-    genome = _length
-    oldNote = int
-    while len(sequence) < _length:
-        if random.random() > 0.1:
-            rVelocity = random.randint(50,100)
-            rNote = random.randint(45,71)
-            octave = rNote // 12
-            try:
-                if oldNote // 12 < (rNote // 12):
-                    rNote -= 12
-                elif oldNote // 12 > (rNote // 12):
-                    rNote += 12
-            except:
-                pass
-        else:
-            rVelocity = (0)
-            rNote = (0)
-        
-        length = random.randint(2,4)
-        length *= 2
-        
-        time = length*_ticks
-        if time >= ((genome*_ticks)-time):
-            time = int(genome*_ticks)
-        
-        msg = mido.Message('note_on',note = rNote,velocity = rVelocity, time = 0)
-        sequence.append(msg)
-        
-        msg = mido.Message('note_off',note=rNote,velocity = rVelocity, time = time)
-        sequence.append(msg)
-        
-        genome -= int(time/_ticks)
-        for each in range(int(time/_ticks)-2):
-            sequence.append('')
-        oldNote = rNote
-    return sequence
+
 
 def harmonize(note,interval):
     """harmonizes a note based on the previous interval"""
@@ -257,7 +218,110 @@ def harmonize(note,interval):
         chord = [root,tonic]
         player.play_wave(synth.generate_chord(chord,length=(60/_tempo)))
         
+def build_motifs():
+    for each in array:
+        start = None
+        passing = None
+        acceptable = False
+        phrase = []
+        for i in range(0,15):
+            if hasattr(each[i],"note"):
+                if start == None:
+                    start = each[i].note
+                    continue
+                elif passing == None:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                else:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                        continue
+                    else:
+                        acceptable = False
+                phrase.append(each[i])
+        
+        if passing%12 - start%12 == 0 or passing%12 - start%12 == 7 and acceptable == True and len(phrase) > 3:
+            motifs[len(motifs)] = phrase
 
+        acceptable = False
+        start = None
+        passing = None
+        phrase = []
+        for i in range(16,31):
+            if hasattr(each[i],"note"):
+                if start == None:
+                    start = each[i].note
+                elif passing == None:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+
+                else:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                phrase.append(each[i])
+        if passing%12 - start%12 == 0 or passing%12 - start%12 == 7 and acceptable == True and len(phrase) > 3:
+            motifs[len(motifs)] = phrase
+
+        acceptable = False
+        start = None
+        passing = None
+        phrase = []
+        for i in range(32,47):
+            if hasattr(each[i],"note"):
+                if start == None:
+                    start = each[i].note
+                elif passing == None:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                
+                else:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                phrase.append(each[i])
+        if passing%12 - start%12 == 0 or passing%12 - start%12 == 7 and acceptable == True and len(phrase) > 3:
+           motifs[len(motifs)] = phrase
+
+        acceptable = False
+        start = None
+        passing = None
+        phrase = []
+        for i in range(48,63):
+            if hasattr(each[i],"note"):
+                if start == None:
+                    start = each[i].note
+                elif passing == None:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                else:
+                    passing = each[i].note
+                    if ((passing%12) - (start%12)) < 7 and ((passing%12) - (start%12)) > -7:
+                        acceptable = True
+                    else:
+                        acceptable = False
+                phrase.append(each[i])
+        if passing%12 - start%12 == 0 or passing%12 - start%12 == 7 and acceptable == True and len(phrase) > 3:
+            motifs[len(motifs)] = phrase
+        
+        
 def score(sequence):
     """Gives an arbitrary fitness score"""
     noteA = int
@@ -290,13 +354,14 @@ def mutateNote(note: int):
 def create_selection_of_sequences():
     """Returns a list of midi note sequences"""
     for i in range(_size):
-        array[i] = __generate_random_notes()
+        array[i] = GaSequence.__generate_random_notes(_length,_ticks)
         quantize2key_(array[i],major)
         mutateSeq(array[i])
+    build_motifs()    
     return array
 
-
-def evolve(sequenceA):
+############--deprecated--############
+'''def evolve(sequenceA):
     """Generates an list of new midi sequences based on the passed sequence"""
     swap = sequenceA
     newGeneration = create_selection_of_sequences()
@@ -323,7 +388,8 @@ def evolve(sequenceA):
     i=0
     for each in spawned:
         array[i] = each
-        i += 1
+        i += 1'''
+#####################################
 
 def difference():
     for each in range(len(array)-2):
@@ -389,15 +455,12 @@ def crossCombine(sequenceA: list,sequenceB: list):
     """Generates an list of new midi sequences based on the parent sequences"""
     array[_size-2] = list(each for each in sequenceA)
     array[_size -1] = list(each for each in sequenceB)
-    m = list(each for each in sequenceB)
+    mating_pool= list(list(array[i]) for i in range(len(array)))
 
     for arrayIndex in range(_size-2):                         #crossover
         
-        array[arrayIndex] = list(each for each in sequenceA)
-        """if random.random() >= 0.5:
-            m = array[_size - 2]
-            array[arrayIndex] = array[_size -1]"""
-
+        array[arrayIndex] = list(each for each in mating_pool[random.randint(0,_size-1)])
+        m = list(each for each in mating_pool[random.randint(0,_size-1)])
         switched = []
         instead = []
         for i in range(_length-1):
