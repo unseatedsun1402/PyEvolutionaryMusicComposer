@@ -1,10 +1,8 @@
-import pyaudio
 from synthesizer import Player,Synthesizer,Waveform
 import mido
 from mido import *
 import time
 import random
-import math
 from tkinter import *
 from tkinter import filedialog as fd
 from functools import partial
@@ -360,36 +358,6 @@ def create_selection_of_sequences():
     build_motifs()    
     return array
 
-############--deprecated--############
-'''def evolve(sequenceA):
-    """Generates an list of new midi sequences based on the passed sequence"""
-    swap = sequenceA
-    newGeneration = create_selection_of_sequences()
-    if len(array)-1 == _size:
-        array.append(sequenceA)
-    else:
-        array[len(array)-1] = sequenceA
-
-    spawned = []
-    for sequenceB in newGeneration:
-        quantize2key(sequenceB,scaleDict[int(random.randrange(0,1))],sequenceA[0].note%12)
-        split = int(random.uniform(len(sequenceA)//8,len(sequenceA)-(len(sequenceA)//8)))
-        childAB = []
-        if(random.random() < 0.5):
-            
-            sequenceA = sequenceB
-            sequenceB = swap            
-        for i in range(split):
-            childAB.append(sequenceA[i])
-        for i in range(split,len(sequenceB)):
-            childAB.append(sequenceB[i])
-        spawned.append(childAB)
-    
-    i=0
-    for each in spawned:
-        array[i] = each
-        i += 1'''
-#####################################
 
 def difference():
     for each in range(len(array)-2):
