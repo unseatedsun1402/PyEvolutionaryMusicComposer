@@ -62,10 +62,12 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
 intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
 
 _bpm = 160
+global _tempo
 _tempo = int(((60/_bpm))*1000000)
 _size = 7           #no. of sequences
 _length = 64       #no. of subdivisions / genome length
 TK = 480
+global ticks
 _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
 KEY = 0
 
@@ -479,10 +481,6 @@ def main():
     buttonItems = tuple(i for i in range(_size))
     for i in range(_size-1):
         array.append('')
-    chord = ["C3", "E3", "G3"]
-
-    #output = mido.open_output('Nord Stage 3 MIDI Input')
-    #player.play_wave(synth.generate_chord(chord,1))
     
     lbl = Label(window, text = "Select function: ")
     lbl.grid()
@@ -490,8 +488,6 @@ def main():
 
     def clicked():
         internalMidi = mido.open_output('IAC Driver Bus 1')
-        
-        
         array = create_selection_of_sequences()
         
         buttons = {each: Button(text="Sequence: "+str(each),command=partial(playSequence,each)) for each in buttonItems}
@@ -539,9 +535,7 @@ def main():
         save_button = Button(window, text='Save Midi', command=lambda: saveFile(int(value_inside1.get())))
         save_button.grid(row=5,column = 2)
     
-    def setTempo(val: int):
-        _bpm = val
-        _tempo = int(((60/_bpm))*1000000)
+    
     
 
     btn = Button(window, text = "Click me" ,
@@ -560,35 +554,12 @@ def main():
 
     window.mainloop()
 
+def setTempo(val: int):
+        _bpm = val
+        _tempo = int(((60/_bpm))*1000000)
+        _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
 
 
-
-def selectSequence(choice):
-   """Selects the new sequence to evolve"""
-   sequenceA = False
-   while True:
-        if len(array) > choice > -1:
-            if not sequenceA:
-                sequenceA = array[choice]
-                buffer = sequenceA
-                evolve(sequenceA)
-                break
-        if choice == -1:
-            print("Quitting...")
-            if not len(array)< 4:
-                midFile = sequence2midi(array[3])
-                try:
-                    midFile.save('newSequence.mid')
-                except:
-                    print(mido.KeySignatureError)
-            
-            else:
-                midFile =  sequence2midi(array[0])
-                try:
-                    midFile.save('newSequence.mid')
-                except ValueError:
-                    print(ValueError)
-                break
 
         
 def playSequence(choice: int):    
@@ -607,12 +578,6 @@ def playSequence(choice: int):
                     time.sleep(mido.tick2second(msg.time,TK,_tempo))
                     internalMidi.send(msg)
                     #harmonize(msg.note,interval)
-                    #interval = msg.note
-                    
-                    #noteOff = mido.Message('note_off',channel = 0, note = msg.note, velocity = 0)
-                    #internalMidi.send(noteOff)
-
-                #time.sleep(msg.time/2400)
         time.sleep(1)
 
 def test():
