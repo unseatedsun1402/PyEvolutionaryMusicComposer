@@ -15,7 +15,7 @@ import GaSequence
 # 
 ###
 """
-array = ['']
+
 buttonItems = tuple
 noteDict = {9:"A",
             10:"Bb",
@@ -59,9 +59,9 @@ intervalDict = {0:'perfect',1:'minor',2:'major',3:'minor',
     4:'major',5:'perfect',6:'augmented',7:'perfect',8:'minor',
     9:'major',10:'minor',11:'major'}
 
-intervalCost = {0:2,1:1,2:3,3:1,4:3,5:2,6:4,7:2,8:1,9:3,10:1,11:3}
+intervalCost = {0:2,1:1,2:3,3:1,4:3,5:4,6:1,7:5,8:1,9:3,10:1,11:3}
 
-_bpm = 160
+_bpm = 164
 global _tempo
 _tempo = int(((60/_bpm))*1000000)
 _size = 7           #no. of sequences
@@ -70,6 +70,9 @@ TK = 480
 global ticks
 _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
 KEY = 0
+
+array = ['']
+fitness = [each for each in range(_length-1)]
 
 motifs = {}
 
@@ -331,13 +334,29 @@ def score(sequence):
         try:
             noteA = sequence[i].note % 12
             noteB = sequence[i+1].note % 12
+            kNoteA = noteDict[noteA]
+            kNoteB = noteDict[noteB]
+            interval = (noteA - noteB)
+            if interval < 0:
+                interval = 12 + interval
+                                                        #note with respect to key
+            keyInterval = intervalDict[kNoteA-kNoteB]   #note interval with respect to key
+            #print(intervalDict[interval])
+            cost += intervalCost[interval] + intervalCost[keyInterval]
+        except:
+            #print("Non Message Type")
+            pass
+    for i in range(len(sequence)-2):
+        try:
+            noteA = sequence[i].note % 12
+            noteB = sequence[i+1].note % 12
             interval = (noteA - noteB)
             if interval < 0:
                 interval = 12 + interval
             #print(intervalDict[interval])
-            cost += intervalCost[interval]
+            fitness[i] = intervalCost[interval]/cost
         except:
-            #print("Non Message Type")
+            fitness[i] = None
             pass
     print('cost', cost)
 
@@ -403,34 +422,38 @@ def difference_(a: list, b: list, c: list):
 def repair(sequence: list):
     notesOpen = []
     openFlag = False
-    for each in sequence:
-        if hasattr(each,"type"):
-            if each.type == "note_on":
-                notesOpen.append(each.note)
-                openFlag = True
-            elif each.type == "note_off":
-                if each.note in notesOpen:
-                    notesOpen.pop(notesOpen.index(each.note))
-            if each.type == "note_off" and not openFlag:
-                each = ''
-            openFlag = False
-    count = 0
-    for each in notesOpen:
-        sequence[_length-1-count]= mido.Message("note_off",note = each, velocity = 0, time = 0)
-        count -= 1
-    print(notesOpen)
+    close = False
+    ticks = 0 #length in ticks (480 ticks in a quater note but tempo is given in ticks which in its case is number of milliseconds per 1/4 note beat)
+    for note in range(len(sequence)-2):
+        if hasattr(sequence[note],"note"):
+            if sequence[note].type == "note_on":
+                if not hasattr(sequence[note+1],'note'):
+                    count = 0
+                    next = False
+                    while not next:
+                        if not hasattr(sequence[note + count], 'note'):
+                            count += 1
+                            continue
+                        else:
+                            next = True
+                    sequence[note+1] = mido.Message("note_off",note = sequence[note].note, velocity = sequence[note].velocity, time = int((TK/8) + ((TK/8)*count)))
+
 
 
 def crossCombine(sequenceA: list,sequenceB: list):
     """Generates an list of new midi sequences based on the parent sequences"""
-    array[_size-2] = list(each for each in sequenceA)
-    array[_size -1] = list(each for each in sequenceB)
+    if len(array) <= _size:
+        array.append(list(each for each in sequenceA))
+        array.append(list(each for each in sequenceB))
+    else:
+        array[len(array) -2] = list(each for each in sequenceA)
+        array[len(array) -1] = list(each for each in sequenceB)
     mating_pool= list(list(array[i]) for i in range(len(array)))
 
-    for arrayIndex in range(_size-2):                         #crossover
+    for arrayIndex in range(len(array)-2):                         #crossover
         
-        array[arrayIndex] = list(each for each in mating_pool[random.randint(0,_size-1)])
-        m = list(each for each in mating_pool[random.randint(0,_size-1)])
+        array[arrayIndex] = list(each for each in mating_pool[random.randint(0,len(array)-1)])
+        m = list(each for each in mating_pool[random.randint(0,len(array)-1)])
         switched = []
         instead = []
         for i in range(_length-1):
@@ -441,15 +464,26 @@ def crossCombine(sequenceA: list,sequenceB: list):
                     if m[i].type == "note_on":
                         if hasattr(array[arrayIndex][i+1],"note"):
                             instead.append(array[arrayIndex][i+1].note)
-                        array[arrayIndex][i+1] = m[i+1]
                         try:
                             tMinus = int(m[i+1].time)
+                            if hasattr(array[arrayIndex][i +int(tMinus/(_ticks*2))],"note"):
+                                if array[arrayIndex][i +int(tMinus/(_ticks*2))].type == "note_on":
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+ 2] = array[arrayIndex][i +int(tMinus/(_ticks*2))+1]
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+2].time -= 60
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+1] = array[arrayIndex][i +int(tMinus/(_ticks*2))]
+                                else:
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+ 2] = array[arrayIndex][i +int(tMinus/(_ticks*2))]
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+2].time -= 60
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+1] = array[arrayIndex][i +int(tMinus/(_ticks*2))-1]
+                            
                             while tMinus > _ticks*2:
-                                array[arrayIndex][i +int(tMinus/(_ticks*2))] = ''
+                                index = i +int(tMinus/(_ticks*2))
+                                array[arrayIndex][index] = ''
                                 tMinus -= _ticks*2
-                        except:
+                        except AttributeError:
                             pass
                         switched.append(m[i].note)
+                        array[arrayIndex][i+1] = m[i+1]
                         if random.random() < 0.01:
                             try:
                                 array[arrayIndex][i].note = mutateNote(array[arrayIndex][i].note)
@@ -459,11 +493,29 @@ def crossCombine(sequenceA: list,sequenceB: list):
                                 #print(array[arrayIndex][i].note)
                                 #print(array[arrayIndex][i+1])
                                 pass
+                    else:
+                        array[arrayIndex][i-1] = m[i-1]
+                        array[arrayIndex][i] = m[i]
+                        try:
+                            tMinus = int(m[i+1].time)
+                            if hasattr(array[arrayIndex][i +int(tMinus/(_ticks*2))],"note"):
+                                if array[arrayIndex][i +int(tMinus/(_ticks*2))].type == "note_on":
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+ 2] = array[arrayIndex][i +int(tMinus/(_ticks*2))+1]
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+2].time -= 60
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+1] = array[arrayIndex][i +int(tMinus/(_ticks*2))]
+                                else:
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+ 1] = array[arrayIndex][i +int(tMinus/(_ticks*2))]
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))+1].time -= 60
+                                    array[arrayIndex][i +int(tMinus/(_ticks*2))] = array[arrayIndex][i +int(tMinus/(_ticks*2))-1]
+                            
+                            while tMinus > _ticks*2:
+                                array[arrayIndex][i +int(tMinus/(_ticks*2))] = ''
+                                tMinus -= _ticks*2
+                        except AttributeError:
+                            pass
             else:
-                if hasattr(array[arrayIndex][i],"type"):
-                    if array[arrayIndex][i].type == "note_on":
-                        i += 1
-            repair(array[arrayIndex])
+                pass
+        repair(array[arrayIndex])
     difference()
     
     return 1
@@ -516,9 +568,6 @@ def main():
         select_sequence = OptionMenu(window, value_inside2, *buttonItems)
         select_sequence.grid(row=3,column = 1,columnspan=1)
 
-        '''submit_button = Button(window, text='Submit', command=lambda: selectSequence(int(value_inside1.get())))
-        submit_button.grid(row = 2,column =2)'''
-
         submit_button = Button(window, text='Submit', command=lambda: crossCombine(array[int(value_inside1.get())],array[int(value_inside2.get())]))
         submit_button.grid(row = 3,column =2)
        
@@ -543,14 +592,14 @@ def main():
     # set Button grid
     btn.grid(column=3, row=0)
         
-    slowtmp = Button(window, text="Slow", command=lambda: setTempo(60))
+    '''slowtmp = Button(window, text="Slow", command=lambda: setTempo(60))
     slowtmp.grid(column=3,row = 3)
     
     medtmp = Button(window, text="Andante", command=lambda: setTempo(100))
     medtmp.grid(column=3,row = 4)
 
     fasttmp = Button(window, text="Fast", command=lambda: setTempo(180))
-    fasttmp.grid(column=3,row = 5)
+    fasttmp.grid(column=3,row = 5)'''
 
     window.mainloop()
 
@@ -566,19 +615,20 @@ def playSequence(choice: int):
     """Plays back the midi sequence to the internal midi bus or synth"""
     score(array[choice])
     sequence = array[choice]
-    chord = ["C3", "E3", "G3"]
     with mido.open_output('IAC Driver Bus 1'):
         #interval = 0
         for msg in sequence:
             if hasattr(msg,"velocity"):
                 #output.send(msg)
+                if msg.time < 0:
+                    msg.time = msg.time / -1
                 if msg.velocity == 0:
                     time.sleep(mido.tick2second(msg.time,TK,_tempo))
                 else:
                     time.sleep(mido.tick2second(msg.time,TK,_tempo))
                     internalMidi.send(msg)
                     #harmonize(msg.note,interval)
-        time.sleep(1)
+        internalMidi.panic()
 
 def test():
     print(mido.get_output_names())
