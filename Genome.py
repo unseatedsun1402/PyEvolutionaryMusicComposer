@@ -52,7 +52,7 @@ class Phrase:
             self.shape = "ascending"
         
         score = 0
-        for each in range(int(len(self.Measure)/2)-1):
+        for each in range(int(len(self.Measure)/2),len(self.Measure)-1):
             score += self.Measure[each].score
         score = score/self.measures
 
@@ -131,6 +131,7 @@ class Measure:
         values = []
         min = 99
         max = 0
+        stationary = False
         for each in self.Bar:
             if each.type == "note":
                 if each.note < min:
@@ -138,11 +139,13 @@ class Measure:
                 if each.note > max:
                     max = each.note
                 values.append(each.note)
-        for z in range(len(values)-1):
+        for z in range(len(values)):
             if not (max - min) == 0:
                 values[z] = (values[z]-min) / (max-min)
+            else:
+                score = 0
         
-        for note in range(1,len(values)-1):
+        for note in range(1,len(values)):
             score = values[note] - values[note-1]
         self.score = score / self.subdiv
         if score < 0:
