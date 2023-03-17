@@ -1,7 +1,7 @@
 from Genome import *
 import Listen
 
-POPULATIONSIZE = 5
+POPULATIONSIZE = 1
 LENGTH = 2
 
 population = [Genome(length=LENGTH) for each in range(POPULATIONSIZE)]
@@ -15,5 +15,7 @@ for genome in population:
                 start = False
             else:
                 measure.generateMeasure(start = False)
+            measure._shape()
+        phrase._shape()
 
 Listen.playSequence(population[0])

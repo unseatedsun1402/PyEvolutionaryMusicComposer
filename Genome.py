@@ -33,11 +33,47 @@ class Genome:
 class Phrase:
     '''second structure containing four measures'''
     def __init__(self,*args):
-        measures,subdivisions = args
-        self.Measure = [Measure(key='C',subdiv=subdivisions) for i in range(measures)]
+        self.measures,subdivisions = args
+        self.Measure = [Measure(key='C',subdiv=subdivisions) for i in range(self.measures)]
 
     def _shape(self):
-        pass
+        score = 0
+        #normalise notes
+        score = 0
+        for each in range(int(len(self.Measure)/2)-1):
+            score += self.Measure[each].score
+        score = score/self.measures
+        
+        if score < 0:
+            self.shape = "descending"
+        if score == 0:
+            self.shape = "stationary"
+        if score > 0:
+            self.shape = "ascending"
+        
+        score = 0
+        for each in range(int(len(self.Measure)/2)-1):
+            score += self.Measure[each].score
+        score = score/self.measures
+
+        match self.shape:
+            case "descending":
+                if score == 0:
+                    self.shape = "descending-stationary"
+                if score > 0:
+                    self.shape = "descending-ascending"
+            case "stationary":
+                if score < 0:
+                    self.shape = "stationary-descending"
+                if score > 0:
+                    self.shape = "stationary-ascending"
+            case "ascending":
+                if score < 0:
+                    self.shape = "ascending-descending"
+                if score == 0:
+                    self.shape = "ascending-stationary"
+
+
 
 class Measure:
     '''third structure containing 8 subdivisions'''
@@ -45,7 +81,9 @@ class Measure:
         self.subdiv = kwargs["subdiv"]
         self.div = int(kwargs["subdiv"]/2)
         self.key = kwargs['key']
+        self.score = float
         self.Bar = [Subdivision(length=1) for i in range(self.subdiv)]
+        
 
     def generateMeasure(self, **kwargs):
         subdivisions = 0
@@ -79,16 +117,40 @@ class Measure:
             count = 0
             measure = []
             while subdivisions > 0:
-                measure.append(Note(length=random.randint(1,4),note=random.randint(0,15),type="note"))
+                measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
                 subdivisions -= measure[count].length
                 if subdivisions < 0:
                     measure[count].length = measure[count].length + subdivisions
                 count +=1
 
-        self.Bar = measure            
+        self.Bar = measure      
     
     def _shape(self):
-        pass
+        score = 0
+        #normalise notes
+        values = []
+        min = 99
+        max = 0
+        for each in self.Bar:
+            if each.type == "note":
+                if each.note < min:
+                    min = each.note
+                if each.note > max:
+                    max = each.note
+                values.append(each.note)
+        for z in range(len(values)-1):
+            if not (max - min) == 0:
+                values[z] = (values[z]-min) / (max-min)
+        
+        for note in range(1,len(values)-1):
+            score = values[note] - values[note-1]
+        self.score = score / self.subdiv
+        if score < 0:
+            self.shape = "descending"
+        elif score == 0:
+            self.shape = "stationary"
+        elif score > 0:
+            self.shape = "ascending"
 
 class Subdivision:
     '''smallest structure for designating subdivisions'''
