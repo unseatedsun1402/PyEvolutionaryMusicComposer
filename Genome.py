@@ -1,6 +1,7 @@
 import random
 import mido
 from mido import *
+import numpy
 
 tonicChord = {'one': [0,5,7],
               'two':[2,5,9],
@@ -78,7 +79,7 @@ class Phrase:
     def _shape(self):
         score = 0
         #normalise notes
-        score = 0
+        '''score = 0
         for each in range(int(len(self.Measure)/2)-1):
             score += self.Measure[each].score
         score = score/self.measures
@@ -110,7 +111,7 @@ class Phrase:
                 if score < 0:
                     self.shape = "ascending-descending"
                 if score == 0:
-                    self.shape = "ascending-stationary"
+                    self.shape = "ascending-stationary"'''
 
 
 
@@ -165,35 +166,47 @@ class Measure:
         self.Bar = measure  
     
     def _shape(self):
-        score = 0
-        #normalise notes
         values = []
-        min = 99
-        max = 0
-        stationary = False
         for each in self.Bar:
             if each.type == "note":
-                if each.note < min:
-                    min = each.note
-                if each.note > max:
-                    max = each.note
                 values.append(each.note)
-        for z in range(len(values)):
-            if not (max - min) == 0:
-                values[z] = (values[z]-min) / (max-min)
-            else:
-                score = 0
-        
-        for note in range(1,len(values)):
-            score = values[note] - values[note-1]
-        self.score = score / self.subdiv
-        if score < 0:
-            self.shape = "descending"
-        elif score == 0:
+        f = numpy.array(values, dtype = float)
+        try:
+            shape = numpy.gradient(f)
+        except:
             self.shape = "stationary"
-        elif score > 0:
-            self.shape = "ascending"
+            return
         
+        self.shape = str
+        gradient = []
+        for each in shape:
+            if each > 0:
+                if not "ascending" in gradient:
+                    gradient.append("ascending")
+            elif each < 0:
+                if not "descending" in gradient:
+                    gradient.append("descending")
+            elif each == 0:
+                if not "stationary" in gradient:
+                    gradient.append("stationary")
+        if len(gradient) == 1:
+            self.shape = gradient[0]
+        elif set(["stationary","ascending"]).issubset(gradient):
+            self.shape = "stationary-ascending"
+        elif set(["ascending","descending"]).issubset(gradient):
+            self.shape = "ascending-descending"
+        elif set(["descending","ascending"]).issubset(gradient):
+            self.shape = "descending-ascending"
+        elif set(["descending","stationary"]).issubset(gradient):
+            self.shape = "descending-stationary"
+        elif set(["stationary","descending"]).issubset(gradient):
+            self.shape = "stationary-descending"
+        elif set(["ascending","stationary"]).issubset(gradient):
+            self.shape = "ascending-stationary"
+
+        else:
+            return Exception(str('No Gradient Found'))
+                
         self._motion()
     
     def _motion(self):
