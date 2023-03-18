@@ -14,13 +14,40 @@ class Genome:
     '''largest structure containing pairs of phrases'''
     def __init__(self,**kwargs):
         self.length = kwargs["length"]
-        self.Phrase = [Phrase(4,8) for  phr in range(self.length)]
+        self.dimensions = (4,8)
+        self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
+        self.Motif = [Measure]
+        self.Repitition = None
 
     def _shape(self):
-        pass
+        score = 0
+        for phrase in self.Phrase:
+            score += phrase.score
+            if score > 0:
+                shape += "ascending"
+                continue
+            elif score < 0:
+                shape += "descending"
+                continue
+            else:
+                shape += "stationary"
+        self.score = score / len(self.Phrase)
+        
+            
 
-    def _reptition(self):
-        pass
+    def repitition(self):
+        for phrase in self.Phrase:
+            for measure in phrase.Measure:
+                Bar = []
+                for note in measure.Bar:
+                    if note.type == "note":
+                        Bar.append((note.type,note.length,note.note))
+                    else:
+                        Bar.append((note.type,note.length))
+                if not Bar in self.Motif:
+                    self.Motif.append(Bar)
+                else:
+                    self.Repitition += 1/(len(self.Phrase)*self.dimensions[0])
 
     def genome2midi(self) -> mido.MidiTrack:
         Track = mido.MidiTrack
@@ -29,12 +56,24 @@ class Genome:
                 for div in measure:
                     if not None:
                         Track.append(mido.Message("note_on",note = div + 48, velocity = 55))
+    
+    def motion(self):
+        conjunct = 0
+        disjunct = 0
+        for phrase in self.Phrase:
+            for measure in self.Measure:
+                conjunct += self.motion[0]
+                disjunct += self.motion[1]
+            phrase.motionRatio = conjunct/disjunct
+        
+        self.motionRatio = conjunct/disjunct
 
 class Phrase:
     '''second structure containing four measures'''
-    def __init__(self,*args):
-        self.measures,subdivisions = args
-        self.Measure = [Measure(key='C',subdiv=subdivisions) for i in range(self.measures)]
+    def __init__(self,args):
+        self.measures,self.subdivisions = args
+        self.Measure = [Measure(key='C',subdiv=self.subdivisions) for i in range(self.measures)]
+        self.motionRatio = float
 
     def _shape(self):
         score = 0
@@ -123,7 +162,7 @@ class Measure:
                     measure[count].length = measure[count].length + subdivisions
                 count +=1
 
-        self.Bar = measure      
+        self.Bar = measure  
     
     def _shape(self):
         score = 0
@@ -154,6 +193,22 @@ class Measure:
             self.shape = "stationary"
         elif score > 0:
             self.shape = "ascending"
+        
+        self._motion()
+    
+    def _motion(self):
+        notes = []
+        conjunct = 0
+        disjunct = 0
+        for each in self.Bar:
+            notes.append(each.note)
+        
+        for i in range(len(notes)-1):
+            if notes[i] - notes[i+1] < 2 and notes[i] - notes[i+1] > -2:
+                conjunct += 1/len(notes)
+            else:
+                disjunct += 1/len(notes)
+        self.Motion = (conjunct,disjunct)
 
 class Subdivision:
     '''smallest structure for designating subdivisions'''

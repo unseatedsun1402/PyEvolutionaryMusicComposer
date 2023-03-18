@@ -35,8 +35,8 @@ def playSequence(genome: Genome.Genome):
     """Plays back the midi sequence to the internal midi bus or synth"""
     with mido.open_output('IAC Driver Bus 1') as internalMidi:
         for phrase in genome.Phrase:
+            print(phrase.shape)
             for measure in phrase.Measure:
-                print(measure.shape)
                 for noteObj in measure.Bar:
                     if noteObj.type == "pause":
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
