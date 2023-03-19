@@ -1,7 +1,8 @@
 from Genome import *
+import Mutation
 import Listen
 
-POPULATIONSIZE = 5
+POPULATIONSIZE = 5 
 LENGTH = 1
 
 population = [Genome(length=LENGTH) for each in range(POPULATIONSIZE)]
@@ -22,5 +23,11 @@ for genome in population:
     genome.repitition()
 
 while True:
-    choice = int(input("Choose number to listen to between 1 and "+str(POPULATIONSIZE)+" ")) -1
-    Listen.playSequence(population[choice])
+    for each in population:
+        
+        Listen.playSequence(each)
+        choice = int(input("rate melody between 1 and 5 "))
+        each.Fitness = choice
+
+    if Mutation.crossover(population):
+        print("Success!")
