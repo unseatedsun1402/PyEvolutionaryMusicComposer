@@ -3,7 +3,7 @@ import Genome
 import mido
 import time
 
-_bpm = 120
+_bpm = 160
 _tempo = int(((60/_bpm))*1000000)
 TK = 480
 SUBDIV = TK/2

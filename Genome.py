@@ -9,8 +9,13 @@ tonicChord = {'one': [0,5,7],
               'four':[5,8,0],
               'five':[7,11,2],
               'six':[8,0,4],
-              'dim':[11,2,5]}
+              'dim':[11,2,5]
+            }
 
+
+###################################################
+#           Genome Class
+###################################################
 class Genome:
     '''largest structure containing pairs of phrases'''
     def __init__(self,**kwargs):
@@ -19,6 +24,7 @@ class Genome:
         self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
         self.Motif = [Measure]
         self.Repitition = None
+        self.Fitness = int
 
     def _shape(self):
         score = 0
@@ -69,6 +75,9 @@ class Genome:
         
         self.motionRatio = conjunct/disjunct
 
+###################################################
+#               Phrase Class
+##################################################
 class Phrase:
     '''second structure containing four measures'''
     def __init__(self,args):
@@ -78,43 +87,12 @@ class Phrase:
 
     def _shape(self):
         score = 0
-        #normalise notes
-        '''score = 0
-        for each in range(int(len(self.Measure)/2)-1):
-            score += self.Measure[each].score
-        score = score/self.measures
-        
-        if score < 0:
-            self.shape = "descending"
-        if score == 0:
-            self.shape = "stationary"
-        if score > 0:
-            self.shape = "ascending"
-        
-        score = 0
-        for each in range(int(len(self.Measure)/2),len(self.Measure)-1):
-            score += self.Measure[each].score
-        score = score/self.measures
-
-        match self.shape:
-            case "descending":
-                if score == 0:
-                    self.shape = "descending-stationary"
-                if score > 0:
-                    self.shape = "descending-ascending"
-            case "stationary":
-                if score < 0:
-                    self.shape = "stationary-descending"
-                if score > 0:
-                    self.shape = "stationary-ascending"
-            case "ascending":
-                if score < 0:
-                    self.shape = "ascending-descending"
-                if score == 0:
-                    self.shape = "ascending-stationary"'''
 
 
 
+###################################################
+#                  Measure Class
+###################################################
 class Measure:
     '''third structure containing 8 subdivisions'''
     def __init__(self,**kwargs):
@@ -223,12 +201,19 @@ class Measure:
                 disjunct += 1/len(notes)
         self.Motion = (conjunct,disjunct)
 
+###################################################
+#               Subdivision Class
+###################################################
 class Subdivision:
     '''smallest structure for designating subdivisions'''
     def __init__(self,**kwargs):
         self.length = kwargs["length"]
     
 
+
+###################################################
+#        Note Class (child of subdivision)
+###################################################
 class Note(Subdivision):
     def __init__(self,**kwargs):
         Subdivision.__init__(self,**kwargs)
