@@ -77,28 +77,27 @@ def shuffle(population):
 
 def motifAnalysis():
     for each in Motif:
-        for measure in each:
-            tritoneWarning = False
-            pCadance = False
-            cadance = False
-            notes = []
-            for note in measure.Bar:
-                notes.append(note.note%8)
-            if 3 in notes:
-                if 6 in notes:
-                    tritoneWarning = True
-            
-            if set([4,0]).issubset(notes):
-                if notes[len(notes)-1] in [3,4,0]:
-                    pCadance = True
-            elif set([3,4,6]).isinstance(notes[len(notes)-1]):
-                cadance = True
-            
-            if tritoneWarning:
-                Motif.remove(each)
-            
-            if cadance:
-                each.score = 1
+        tritoneWarning = False
+        pCadance = False
+        cadance = False
+        notes = []
+        for note in each.Bar:
+            notes.append(note.note%8)
+        if 3 in notes:
+            if 6 in notes:
+                tritoneWarning = True
+        
+        if set([4,0]).issubset(notes):
+            if notes[len(notes)-1] in [3,4,0]:
+                pCadance = True
+        elif set([3,4,6]).isinstance(notes[len(notes)-1]):
+            cadance = True
+        
+        if tritoneWarning:
+            Motif.remove(each)
+        
+        if cadance:
+            each.score = 1
 
 
 def sortPopulation(population):
@@ -107,6 +106,7 @@ def sortPopulation(population):
         sorted.append((each,each.Fitness))
         for motif in each.Motif:
             Motif.append(motif)
+    motifAnalysis()
     
     arrange = True
     while arrange:

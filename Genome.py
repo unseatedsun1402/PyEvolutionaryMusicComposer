@@ -23,12 +23,11 @@ class Genome:
         self.dimensions = (4,8)
         self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
         self.Motif = [Measure]
-        self.Repitition = None
+        self.Repitition = 0
         self.Fitness = int
 
     def _shape(self):
         pass
-
         
             
 
@@ -41,10 +40,14 @@ class Genome:
                         Bar.append((note.type,note.length,note.note))
                     else:
                         Bar.append((note.type,note.length))
-                if not Bar in self.Motif:
-                    self.Motif.append(Bar)
-                else:
-                    self.Repitition += 1/(len(self.Phrase)*self.dimensions[0])
+                repeated = False
+                for each in self.Motif:
+                    if Bar in self.Motif:
+                        repeated = True
+                    else:
+                        self.Repitition += 1/(len(self.Phrase)*self.dimensions[0])
+                self.Motif.append(measure)
+                
 
     def genome2midi(self) -> mido.MidiTrack:
         Track = mido.MidiTrack
