@@ -1,6 +1,7 @@
 import mido
 from Genome import *
 import Harmonize
+from tkinter import filedialog as fd
 
 _bpm = 160
 _tempo = int(((60/_bpm))*1000000)
@@ -75,3 +76,10 @@ def as_midi(genome: Genome, **kwargs):
         file.tracks.append(harmonyTrk)
     except ReferenceError:
         pass
+    try:
+        filename = fd.asksaveasfilename()
+        if not filename[:3] == ".mid":
+            filename += ".mid"
+        file.save(filename)
+    except Exception as e:
+        print(e)

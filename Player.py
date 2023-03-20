@@ -27,14 +27,22 @@ for genome in population:
 
 while True:
     for each in population:
-        Export.as_midi(each,harmony=True)
         Listen.playSequence(each)
         
-        choice = int(input("rate melody between 1 and 5 "))
-        if choice > 5 or choice < 0:
-            print("incorrect range")
+        choice = (input("rate melody between 1 and 5 "))
+        if choice.isnumeric():
+            choice = int(choice)
+            if choice > 5 or choice < 0:
+                print("incorrect range")
+            else:
+                each.Fitness = choice
+
         else:
-            each.Fitness = choice
+            if 'save' in choice:
+                arguments = choice.split(" ")
+                arguments.remove('save')
+                
+                Export.as_midi(each,harmony = True)
 
     if Mutation.crossover(population):
         print("Success!")
