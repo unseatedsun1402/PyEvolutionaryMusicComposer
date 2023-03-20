@@ -42,7 +42,7 @@ def crossover(population):
                 p = 0
                 m = i
             child.Phrase[p].Measure[m] = copy.copy(parentB.Phrase[p].Measure[m])
-            if random.rand() < 0.03:
+            if random.random() < 0.03:
                 child.Phrase[p].Measure[m].mutation()
             
             child.motion()

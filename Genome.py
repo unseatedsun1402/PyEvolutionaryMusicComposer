@@ -68,7 +68,7 @@ class Genome:
         conjunct = 0
         disjunct = 0
         for phrase in self.Phrase:
-            for measure in self.Measure:
+            for measure in phrase.Measure:
                 conjunct += self.motion[0]
                 disjunct += self.motion[1]
             phrase.motionRatio = conjunct/disjunct
