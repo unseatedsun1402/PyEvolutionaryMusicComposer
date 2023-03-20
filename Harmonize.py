@@ -1,25 +1,28 @@
 from Genome import *
-chordDict = {1:[0,4,7],
-             2:[2,5,9],
-             3:[4,7,11],
-             4:[5,8,12],
-             5:[7,11,14],
-             6:[4,7,11],
-             7:[2,5,11]}
+chordDict = {1:[0,2,4],
+             2:[1,3,5],
+             3:[2,4,6],
+             4:[3,5,7],
+             5:[4,6,8],
+             6:[5,7,9],
+             7:[6,8,10]}
 
 def harmonize(self):
     notes = []
     for note in self.Bar:
-        notes.append(note)
+        notes.append(note.note%8)
     
     appropriate = []
     for i in range(len(chordDict)):
         score = 0
         values = chordDict.values()
+        values = [each for each in values]
+        for each in values:
+            for note in each:
+                note = note%12
         for each in notes:
-            for chord in values:
-                if each.note in chord:
-                    score += 1/len(chordDict)
+            if each in values[i]:
+                score += 1/len(chordDict)
         appropriate.append(score)
     
     greatest = 0

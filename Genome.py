@@ -27,18 +27,8 @@ class Genome:
         self.Fitness = int
 
     def _shape(self):
-        score = 0
-        for phrase in self.Phrase:
-            score += phrase.score
-            if score > 0:
-                shape += "ascending"
-                continue
-            elif score < 0:
-                shape += "descending"
-                continue
-            else:
-                shape += "stationary"
-        self.score = score / len(self.Phrase)
+        pass
+
         
             
 
@@ -69,8 +59,13 @@ class Genome:
         disjunct = 0
         for phrase in self.Phrase:
             for measure in phrase.Measure:
-                conjunct += self.motion[0]
-                disjunct += self.motion[1]
+                try:
+                    c,d = measure.Motion
+                except AttributeError:
+                    measure._motion()
+                    c,d = measure.Motion
+                conjunct += c
+                disjunct += d
             phrase.motionRatio = conjunct/disjunct
         
         self.motionRatio = conjunct/disjunct
@@ -86,8 +81,55 @@ class Phrase:
         self.motionRatio = float
 
     def _shape(self):
-        score = 0
+        values = []
+        for measure in self.Measure:
+            avg = 0
+            for each in measure.gradient:
+                avg += each
+            values.append(avg)
+        f = numpy.array(values, dtype = float)
+        try:
+            shape = numpy.gradient(f)
+            self.gradient = shape
+        except:
+            self.shape = "stationary"
+            self.gradient = [0]
+            return
+        
+        self.shape = str
+        gradient = []
+        for each in shape:
+            if each > 0:
+                if not "ascending" in gradient:
+                    gradient.append("ascending")
+            elif each < 0:
+                if not "descending" in gradient:
+                    gradient.append("descending")
+            elif each == 0:
+                if not "stationary" in gradient:
+                    gradient.append("stationary")
+        if len(gradient) == 1:
+            self.shape = gradient[0]
+        elif set(["stationary","ascending"]).issubset(gradient):
+            self.shape = "stationary-ascending"
+        elif set(["ascending","descending"]).issubset(gradient):
+            self.shape = "ascending-descending"
+        elif set(["descending","ascending"]).issubset(gradient):
+            self.shape = "descending-ascending"
+        elif set(["descending","stationary"]).issubset(gradient):
+            self.shape = "descending-stationary"
+        elif set(["stationary","descending"]).issubset(gradient):
+            self.shape = "stationary-descending"
+        elif set(["ascending","stationary"]).issubset(gradient):
+            self.shape = "ascending-stationary"
 
+        else:
+            return Exception(str('No Gradient Found'))
+                
+        self._motion()
+    
+    def _motion(self):
+        pass
 
 
 ###################################################
@@ -112,7 +154,9 @@ class Measure:
             count = 0
             measure = []
             while subdivisions > 0:
-                measure.append(Note(length=random.randint(1,4),note=random.randint(0,15),type="note"))
+                measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
+                if subdivisions ==6:
+                    measure[len(measure)-1].velocity = 100
                 subdivisions -= measure[count].length
                 if subdivisions < 0:
                     measure[count].length = measure[count].length + subdivisions
@@ -136,12 +180,43 @@ class Measure:
             measure = []
             while subdivisions > 0:
                 measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
+                if subdivisions ==6:
+                    measure[len(measure)-1].velocity = 100
                 subdivisions -= measure[count].length
                 if subdivisions < 0:
                     measure[count].length = measure[count].length + subdivisions
                 count +=1
 
-        self.Bar = measure  
+        self.Bar = measure
+
+    def Closing(self):
+        subdivisions = 0                #starting bar must contain a note from tonic chord
+        for each in self.Bar:
+            subdivisions += each.length
+        
+        count = 0
+        measure = []
+        cadence = {0:[0,5,8],
+                   1:[4,5,12],
+                   2:[5,11,13]}
+        c = cadence[random.randint(0,2)]
+        while subdivisions > 0:
+            note = c[random.randint(0,2)]
+            measure.append(Note(length=random.randint(1,4),note=note,type="note"))
+            subdivisions -= measure[count].length
+            if subdivisions < 0:
+                measure[count].length = measure[count].length + subdivisions
+            count +=1
+
+        condition = False
+        note = self.Bar[len(self.Bar)-1]
+        if not note in c:
+            self.Bar[len(self.Bar)-1] = 0
+
+            
+        self.Bar = measure
+        self._motion()
+
     
     def _shape(self):
         values = []
@@ -151,8 +226,10 @@ class Measure:
         f = numpy.array(values, dtype = float)
         try:
             shape = numpy.gradient(f)
+            self.gradient = [each for each in shape]
         except:
             self.shape = "stationary"
+            self.gradient = [0]
             return
         
         self.shape = str
@@ -220,3 +297,4 @@ class Note(Subdivision):
         self.type = kwargs['type']
         if self.type == "note":
             self.note = kwargs["note"]
+            self.velocity = 80

@@ -6,7 +6,7 @@ Motif = []
 
 def crossover(population):
     sorted = sortPopulation(population)
-    fittest = len(sorted)//3
+    fittest = int(len(sorted)//3)
 
     for individual in range(0,fittest):
         parentA = random.randint(fittest,len(sorted)-1)
@@ -21,8 +21,8 @@ def crossover(population):
         length = population[parentA].length
         measures = population[parentA].dimensions[0]
         
-        parentA = sorted[parentA][0]
-        parentB = sorted[parentB][0]
+        parentA = copy.copy(sorted[parentA][0])
+        parentB = copy.copy(sorted[parentB][0])
         child = Genome(length = length)
 
         for i in range(0,length*measures):
@@ -43,7 +43,7 @@ def crossover(population):
                 m = i
             child.Phrase[p].Measure[m] = copy.copy(parentB.Phrase[p].Measure[m])
             if random.random() < 0.03:
-                child.Phrase[p].Measure[m].mutation()
+                mutation(child.Phrase[p].Measure[m])
             
             child.motion()
             child._shape()
@@ -52,16 +52,28 @@ def crossover(population):
     for individual in range(fittest,len(population)):
         population[individual] = copy.copy(sorted[individual][0])
     
+    shuffle(population)
     return(True)
             
 
-def mutation(self):
+def mutation(self: Measure):
     self.Bar = random.randint(0,len(Motif))
     for each in self.Bar:
         if each.type == "note":
             each.note = random.randint(0,15)
+    self._motion()
 
-        
+def shuffle(population):
+    copies = []
+    for each in population:
+        copies.append(copy.copy(each))
+    
+    remaining = [each for each in range(len(copies))]
+    index = random.randint(0,len(remaining)-1)
+    population[index] = copies[index]
+
+    remaining.pop(index)
+    copies.pop(index)
 
 
 def sortPopulation(population):

@@ -41,15 +41,15 @@ def playSequence(genome: Genome.Genome):
                 print(measure.shape)
                 harmony = Harmonize.harmonize(measure)
                 for i in harmony:
-                    internalMidi.send(mido.Message("note_on",note=noteDict[i],velocity = 55,time = 0))
+                    internalMidi.send(mido.Message("note_on",note=noteDict[i]-12,velocity = 45,time = 0))
                 for noteObj in measure.Bar:
                     if noteObj.type == "pause":
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
                     else:
-                        internalMidi.send(mido.Message("note_on",note=noteDict[noteObj.note],velocity=90,time=0))
+                        internalMidi.send(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=0))
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
-                        internalMidi.send(mido.Message("note_off", note = noteDict[noteObj.note], velocity = 90, time = noteObj.length*SUBDIV))
+                        internalMidi.send(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
                 for i in harmony:
-                    internalMidi.send(mido.Message("note_off",note = noteDict[i],velocity = 55, time = 0))
+                    internalMidi.send(mido.Message("note_off",note = noteDict[i]-12,velocity = 45, time = 0))
         internalMidi.panic()
 
