@@ -2,45 +2,48 @@ from Genome import *
 import random
 import copy
 
-Motif = [Measure]
+Motif = []
 
 def crossover(population):
-    sorted = sortPopulation(population)
-    fittest = int(len(sorted)//3)
+    sorted = sortPopulation(copy.copy(population))
+    fittest = len(sorted)//3
+    pool = []
+    for each in sorted:
+        if each.Fitness == 1:
+            pool.append(each)
+    
+    if len(pool) < 2:
+        print('not enough parents')
+        return
 
-    for individual in range(0,fittest):
-        parentA = random.randint(fittest,len(sorted)-1)
-        parentB = random.randint(fittest,len(sorted)-1)
+    for individual in range(fittest,len(sorted)-1):
+        parentA = random.randint(0,len(pool)-1)
+        parentB = random.randint(0,len(pool)-1)
+
+
+        length = pool[parentA].length
+        measures = pool[parentA].dimensions[0]
         while True:
-            if parentB == parentA:
-                parentB = random.randint(fittest,len(sorted)-1)
+            if parentA == parentB:
+                parentB = random.randint(0,len(pool)-1)
             else:
                 break
         
+        parentA = pool[parentA]
+        parentB = pool[parentB]
 
-        length = population[parentA].length
-        measures = population[parentA].dimensions[0]
-        
-        parentA = copy.copy(sorted[parentA][0])
-        parentB = copy.copy(sorted[parentB][0])
+
         child = Genome(length = length)
+        population = [each for each in range(len(sorted))]
 
         for i in range(0,length*measures):
-            if i > measures:
-                p = i // measures
-                m = i % measures
-            else:
-                p = 0
-                m = i
+            p = i // measures
+            m = i % measures
             child.Phrase[p].Measure[m] = copy.copy(parentA.Phrase[p].Measure[m])
 
         for i in range(random.randint(0,length*measures),length*measures):
-            if i > measures:
-                p = i // measures
-                m = i % measures
-            else:
-                p = 0
-                m = i
+            p = i // measures
+            m = i % measures
             child.Phrase[p].Measure[m] = copy.copy(parentB.Phrase[p].Measure[m])
             if random.random() < 0.03:
                 mutation(child.Phrase[p].Measure[m])
@@ -50,17 +53,20 @@ def crossover(population):
         population[individual] = copy.copy(child)
     
     for individual in range(fittest,len(population)):
-        population[individual] = copy.copy(sorted[individual][0])
+        population[individual] = copy.copy(sorted[individual])
     
     shuffle(population)
     return(True)
             
 
 def mutation(self: Measure):
-    self.Bar = random.randint(0,len(Motif))
-    for each in self.Bar:
-        if each.type == "note":
-            each.note = random.randint(0,15)
+    if len(Motif) > 1:
+        self = Motif[random.randint(0,len(Motif)-1)]
+
+    else:
+        for each in self.Bar:
+            if each.type == "note":
+                each.note = random.randint(0,15)
     self._motion()
 
 def shuffle(population):
@@ -90,7 +96,7 @@ def motifAnalysis():
         if set([4,0]).issubset(notes):
             if notes[len(notes)-1] in [3,4,0]:
                 pCadance = True
-        elif set([3,4,6]).isinstance(notes[len(notes)-1]):
+        elif notes[len(notes)-1] in [3,4,6]:
             cadance = True
         
         if tritoneWarning:
@@ -103,16 +109,17 @@ def motifAnalysis():
 def sortPopulation(population):
     sorted = []
     for each in population:
-        sorted.append((each,each.Fitness))
+        sorted.append(each)
         for motif in each.Motif:
-            Motif.append(motif)
+            if hasattr(motif,'Bar'):
+                Motif.append(motif)
     motifAnalysis()
     
     arrange = True
     while arrange:
         changes = False
         for i in range(len(sorted)-1):
-            if sorted[i][1] < sorted[i+1][1]:
+            if sorted[i].Fitness < sorted[i+1].Fitness:
                 change = sorted[i]
                 sorted[i+1] = change
                 changes = True

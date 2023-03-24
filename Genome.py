@@ -2,6 +2,8 @@ import random
 import mido
 from mido import *
 import numpy
+import copy
+
 
 tonicChord = {'one': [0,5,7],
               'two':[2,5,9],
@@ -46,7 +48,19 @@ class Genome:
                         repeated = True
                     else:
                         self.Repitition += 1/(len(self.Phrase)*self.dimensions[0])
-                self.Motif.append(measure)
+                
+                notes = []
+                for note in measure.Bar:
+                    if note.type == "note":
+                        notes.append(note.note)
+                try:
+                    grad = numpy.gradient(numpy.array(notes))
+                    for i in grad:
+                        if i > 4 or i < -4:
+                            return
+                    self.Motif.append(copy.copy(measure))
+                except Exception as e:
+                    print(e)
                 
 
     def genome2midi(self) -> mido.MidiTrack:
@@ -204,8 +218,7 @@ class Measure:
                    2:[5,11,13]}
         c = cadence[random.randint(0,2)]
         while subdivisions > 0:
-            note = c[random.randint(0,2)]
-            measure.append(Note(length=random.randint(1,4),note=note,type="note"))
+            measure.append(Note(length=random.randint(1,4),note=random.randint(0,15),type="note"))
             subdivisions -= measure[count].length
             if subdivisions < 0:
                 measure[count].length = measure[count].length + subdivisions
@@ -214,7 +227,7 @@ class Measure:
         condition = False
         note = self.Bar[len(self.Bar)-1]
         if not note in c:
-            self.Bar[len(self.Bar)-1] = 0
+            self.Bar[len(self.Bar)-1] = c[random.randint(0,2)]%8
 
             
         self.Bar = measure

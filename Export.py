@@ -54,10 +54,13 @@ def as_midi(genome: Genome, **kwargs):
                     if noteObj.type == "pause":
                         pause += mido.tick2second(noteObj.length*SUBDIV,TK,_tempo)
                     else:
-                        melodyTrk.append(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=pause))
-                        melodyTrk.append(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
-                for i in harmony:
-                    harmonyTrk.append(mido.Message("note_off",note = noteDict[i]-12,velocity = 45, time = length*SUBDIV))
+                        melodyTrk.append(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=int(pause)))
+                        melodyTrk.append(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = int(noteObj.length*SUBDIV)))
+                for i in range(len(harmony)-1):
+                    if i == 0:
+                        harmonyTrk.append(mido.Message("note_off",note = noteDict[harmony[i]]-12,velocity = 45, time = int(length*SUBDIV)))
+                    else:
+                        harmonyTrk.append(mido.Message("note_off",note = noteDict[harmony[i]]-12,velocity = 45, time = 0))
     else:
         for phrase in genome.Phrase:
             #print(phrase.shape)
@@ -67,8 +70,8 @@ def as_midi(genome: Genome, **kwargs):
                     if noteObj.type == "pause":
                         pause += noteObj.length
                     else:
-                        melodyTrk.append(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=pause))
-                        melodyTrk.append(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
+                        melodyTrk.append(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=int(pause)))
+                        melodyTrk.append(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = int(noteObj.length*SUBDIV)))
 
     file = mido.MidiFile()
     file.tracks.append(melodyTrk)
