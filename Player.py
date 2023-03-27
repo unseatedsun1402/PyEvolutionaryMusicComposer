@@ -51,8 +51,12 @@ def __main__():
         individual += 1
 
         if individual == len(population):
-            Mutation.crossover(population)
+            if Mutation.crossover(population):
+                print('Success')
+            else:
+                print('Not enough parents')
             individual = 0
+        indLabel.configure(text=str(individual+1))
         return
     
     def failIndividual():
@@ -61,8 +65,12 @@ def __main__():
         individual += 1
 
         if individual == len(population):
-            Mutation.crossover(population)
+            if Mutation.crossover(population):
+                print('Success')
+            else:
+                print('Not enough parents')
             individual = 0
+        indLabel.configure(text=str(individual+1))
         return
     
     play = Button(root, text='Play',command=lambda:playSequence())
@@ -77,7 +85,7 @@ def __main__():
     bad = Button(root,text='Fail',command=lambda:failIndividual())
     bad.grid(column=1,row=1)
 
-    indLabel = Label(root,text=str(individual))
+    indLabel = Label(root,text=str(individual+1))
     indLabel.grid(column=2,row=0)
     root.mainloop()
 
