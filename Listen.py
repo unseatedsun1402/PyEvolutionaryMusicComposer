@@ -38,7 +38,7 @@ def playSequence(genome: Genome.Genome):
         for phrase in genome.Phrase:
             #print(phrase.shape)
             for measure in phrase.Measure:
-                print(measure.shape)
+                #print(measure.shape)
                 harmony = Harmonize.harmonize(measure)
                 for i in harmony:
                     internalMidi.send(mido.Message("note_on",note=noteDict[i]-12,velocity = 45,time = 0))
@@ -52,4 +52,11 @@ def playSequence(genome: Genome.Genome):
                 for i in harmony:
                     internalMidi.send(mido.Message("note_off",note = noteDict[i]-12,velocity = 45, time = 0))
         internalMidi.panic()
+
+def setTempo(tempo: int):
+    '''sets the global bpm and tempo variables'''
+    global _bpm
+    global _tempo
+    _bpm = tempo
+    _tempo = int(((60/_bpm))*1000000)
 

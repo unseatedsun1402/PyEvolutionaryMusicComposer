@@ -121,6 +121,7 @@ def sortPopulation(population):
         for i in range(len(sorted)-1):
             if sorted[i].Fitness < sorted[i+1].Fitness:
                 change = sorted[i]
+                sorted[i] = sorted[i+1]
                 sorted[i+1] = change
                 changes = True
             i +=1

@@ -22,16 +22,23 @@ class Genome:
     '''largest structure containing pairs of phrases'''
     def __init__(self,**kwargs):
         self.length = kwargs["length"]
+        '''defines no. of phrases in an indiviual genome'''
         self.dimensions = (4,8)
+        '''defines the no. of measures and no. of subdivisions to a meaure'''
         self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
-        self.Motif = [Measure]
+        '''container for Phrase objects'''
+        self.Motif = [Measure.Bar]
         self.Repitition = 0
         self.Fitness = int
 
     def _shape(self):
         pass
         
-            
+    def get_features(self):
+        '''returns genome features'''
+        gFeatures = [self.length,self.dimensions,self.repitition,self.Fitness]
+        pFeatures = [[phrase.shape,phrase.motionRatio]for phrase in self.Phrase]
+        return [gFeatures,pFeatures]
 
     def repitition(self):
         for phrase in self.Phrase:
@@ -64,6 +71,7 @@ class Genome:
                 
 
     def genome2midi(self) -> mido.MidiTrack:
+        '''converts a genome into a midiTrack object'''
         Track = mido.MidiTrack
         for phrase in self.phrase:
             for measure in phrase:
@@ -72,20 +80,20 @@ class Genome:
                         Track.append(mido.Message("note_on",note = div + 48, velocity = 55))
     
     def motion(self):
+        '''gets the conjunct motion percentage of the genome'''
         conjunct = 0
-        disjunct = 0
         for phrase in self.Phrase:
+            mconjunct = 0
             for measure in phrase.Measure:
                 try:
                     c,d = measure.Motion
                 except AttributeError:
                     measure._motion()
                     c,d = measure.Motion
-                conjunct += c
-                disjunct += d
-            phrase.motionRatio = conjunct/disjunct
-        
-        self.motionRatio = conjunct/disjunct
+                mconjunct += c
+            phrase.motionRatio = mconjunct/len(measure.Bar)
+            conjunct += phrase.motionRatio
+        self.motionRatio = conjunct/2
 
 ###################################################
 #               Phrase Class
@@ -94,8 +102,11 @@ class Phrase:
     '''second structure containing four measures'''
     def __init__(self,args):
         self.measures,self.subdivisions = args
+
         self.Measure = [Measure(key='C',subdiv=self.subdivisions) for i in range(self.measures)]
+        '''container for Measure objects'''
         self.motionRatio = float
+        '''percentage of the phrase made up of conjunct motion'''
 
     def _shape(self):
         values = []
@@ -148,6 +159,11 @@ class Phrase:
     def _motion(self):
         pass
 
+    def _repition(self):
+        for measure in self.Measure:
+            if measure.Bar in self.Motif:
+                pass
+
 
 ###################################################
 #                  Measure Class
@@ -156,10 +172,15 @@ class Measure:
     '''third structure containing 8 subdivisions'''
     def __init__(self,**kwargs):
         self.subdiv = kwargs["subdiv"]
+        '''no. of subdivisions'''
         self.div = int(kwargs["subdiv"]/2)
+        '''no. of divisions'''
         self.key = kwargs['key']
-        self.score = float
+        '''key of the measure'''
+        self._score = float
+        '''for fitness evaluation'''
         self.Bar = [Subdivision(length=1) for i in range(self.subdiv)]
+        '''list of note objects'''
         
 
     def generateMeasure(self, **kwargs):
@@ -235,6 +256,7 @@ class Measure:
 
     
     def _shape(self):
+        '''finds the musical shape of the measure'''
         values = []
         for each in self.Bar:
             if each.type == "note":
@@ -281,6 +303,7 @@ class Measure:
         self._motion()
     
     def _motion(self):
+        '''finds the percentagerelationship of conjunct motion in a measure'''
         notes = []
         conjunct = 0
         disjunct = 0
@@ -308,9 +331,61 @@ class Subdivision:
 #        Note Class (child of subdivision)
 ###################################################
 class Note(Subdivision):
+    '''Inherits from Subdivision'''
     def __init__(self,**kwargs):
         Subdivision.__init__(self,**kwargs)
         self.type = kwargs['type']
         if self.type == "note":
             self.note = kwargs["note"]
             self.velocity = 80
+
+
+####################################################
+#           Trained Algorithm Generator
+####################################################
+
+def sythesizedNewComposition(**kwargs):
+    '''Synthesized a new individual based on the features passed in'''
+    gFeatures = kwargs[0]
+    pFeatures = kwargs[1]
+    shape = pFeatures[0]
+    motionRatio = pFeatures[1]
+    repitition = kwargs['repitition']
+    composition = Genome(length = kwargs['length'])
+
+    for phrase in composition.Phrase:
+        for measure in phrase.Measure:
+            subdivisions = 0
+            bar = []
+            for each in measure.Bar:
+                subdivisions += each.length
+            
+            while subdivisions > 0:
+                if len(bar) >= 1:
+                    if random.random() > motionRatio:
+                        if not bar[len(bar)-1].note in [3,4,7,8]:
+                            leap = random.randint(2,7)
+                            if random.random() > 0.5:
+                                leap = 0-leap
+                            note = Note(length=random.randint(1,4),note = bar[len(bar)-1].note + leap, type="note")
+                    else:
+                        step = random.randint(-1,1)
+                        note = Note(length=random.randint(1,4),note = bar[len(bar)-1].note + step, type="note")
+                    if subdivisions - note.length > 0:
+                        subdivisions -= note.length
+                    else:
+                        note.length = subdivisions
+                        subdivisions = 0
+                    bar.append(note)
+                else:
+                    note = (Note(length=random.randint(1,4),note=random.randint(0,15),type="note"))
+                    if subdivisions - note.length > 0:
+                            subdivisions -= note.length
+                    else:
+                        note.length = subdivisions
+                        subdivisions = 0
+                    bar.append(note)
+    return composition
+            
+
+            
