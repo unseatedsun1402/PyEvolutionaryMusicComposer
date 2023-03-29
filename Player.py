@@ -88,6 +88,7 @@ def __main__():
             global parentPool
             parentPool = 0
         indLabel.configure(text='Individual: '+str(individual+1))
+        parentsLable.configure(text='Parents: '+str(parentPool))
         return
     frame = tkinter.Frame(root)
     frame.configure(width=Tk.geometry(root)[0],bg='#ef6f6c')

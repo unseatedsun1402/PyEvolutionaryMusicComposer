@@ -27,7 +27,7 @@ class Genome:
         '''defines the no. of measures and no. of subdivisions to a meaure'''
         self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
         '''container for Phrase objects'''
-        self.Motif = [Measure.Bar]
+        self.Motif = []
         self.Repitition = 0
         self.Fitness = int
 
@@ -103,6 +103,8 @@ class Phrase:
     def __init__(self,args):
         self.measures,self.subdivisions = args
 
+        self.repitition = 0
+
         self.Measure = [Measure(key='C',subdiv=self.subdivisions) for i in range(self.measures)]
         '''container for Measure objects'''
         self.motionRatio = float
@@ -155,14 +157,25 @@ class Phrase:
             return Exception(str('No Gradient Found'))
                 
         self._motion()
+        self._repitition()
     
     def _motion(self):
         pass
 
-    def _repition(self):
+    def _repitition(self):
+        sequence = []
+        notes = 0
         for measure in self.Measure:
-            if measure.Bar in self.Motif:
-                pass
+            subsequence = []
+            for note in measure.Bar:
+                notes += 1
+                sequence.append(note.note)
+                subsequence.append(note.note)
+                if len(subsequence) > 1:
+                    if set(subsequence).issubset(sequence):
+                        self.repitition += 1
+        self.repitition = self.repitition / notes
+
 
 
 ###################################################
