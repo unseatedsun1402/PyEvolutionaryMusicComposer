@@ -12,7 +12,7 @@ _tempo = int(((60/_bpm))*1000000)
 
 TK = 480
 '''No. of ticks per quater note divission'''
-SUBDIV = TK/2
+SUBDIV = TK/4
 '''No. of ticks per 16th note subdivision'''
 global ticks
 _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
@@ -50,7 +50,7 @@ def playSequence(genome: Genome.Genome):
                 #print(measure.shape)
                 harmony = Harmonize.harmonize(measure)
                 for i in harmony:
-                    internalMidi.send(mido.Message("note_on",note=noteDict[i]-12,velocity = 45,time = 0))
+                    internalMidi.send(mido.Message("note_on",note=noteDict[i]-12,velocity = 40,time = 0))
                 for noteObj in measure.Bar:
                     if noteObj.type == "pause":
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
@@ -59,7 +59,7 @@ def playSequence(genome: Genome.Genome):
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
                         internalMidi.send(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
                 for i in harmony:
-                    internalMidi.send(mido.Message("note_off",note = noteDict[i]-12,velocity = 45, time = 0))
+                    internalMidi.send(mido.Message("note_off",note = noteDict[i]-12,velocity = 40, time = 0))
         internalMidi.panic()
 
 def setTempo(tempo: int):

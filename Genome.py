@@ -69,7 +69,7 @@ class Genome:
         '''gets the conjunct motion percentage of the genome'''
         motion = []
         for phrase in self.Phrase:
-            motion.append(phrase.Motion)
+            motion.append(phrase.MotionAvg)
             for measure in phrase.Measure:
                 try:
                     c = measure.Motion
@@ -92,11 +92,13 @@ class Phrase:
     def __init__(self,args):
         self.measures,self.subdivisions = args
 
-        self.repitition = 0
+        self.Repitition = 0
 
         self.Measure = [Measure(key='C',subdiv=self.subdivisions) for i in range(self.measures)]
         '''container for Measure objects'''
-        self.motionRatio = float
+        self.Motion = 0
+        '''list of the percentage measures are made up of conjunct motion'''
+        self.MotionAvg = 0
         '''percentage of the phrase made up of conjunct motion'''
 
     def _shape(self):
@@ -150,10 +152,16 @@ class Phrase:
     
     def _motion(self):
         motion = []
+        motionTotal = 0
         for measure in self.Measure:
-            motion.append(measure.Motion)
+            try:
+                motion.append(measure.Motion)
+                motionTotal += measure.Motion
+            except TypeError:
+                measure._motion()
         
         self.Motion = motion
+        self.MotionAvg = motionTotal/self.measures
         
 
     def _repitition(self):
@@ -166,9 +174,9 @@ class Phrase:
                 subsequence.append(note.note)
                 if len(subsequence) > 1:
                     if set(subsequence).issubset(sequence):
-                        self.repitition += 1
+                        self.Repitition += 1
                 sequence.append(note.note)
-        self.repitition = self.repitition / notes
+        self.Repitition = self.Repitition / notes
 
 
 
@@ -188,6 +196,7 @@ class Measure:
         '''for fitness evaluation'''
         self.Bar = [Subdivision(length=1) for i in range(self.subdiv)]
         '''list of note objects'''
+        self.Motion = float
         
 
     def generateMeasure(self, **kwargs):
@@ -319,9 +328,9 @@ class Measure:
         
         for i in range(len(notes)-1):
             if notes[i] - notes[i+1] < 2 and notes[i] - notes[i+1] > -2:
-                conjunct += 1/len(notes)
+                conjunct += 1/(len(notes)-1)
             else:
-                disjunct += 1/len(notes)
+                disjunct += 1/(len(notes)-1)
         self.Motion = conjunct
 
 ###################################################
