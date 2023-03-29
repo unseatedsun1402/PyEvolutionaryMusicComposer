@@ -5,14 +5,23 @@ import mido
 import time
 
 _bpm = 120
+'''beats per minute'''
+
 _tempo = int(((60/_bpm))*1000000)
+'''milliseconds per quater note'''
+
 TK = 480
-SUBDIV = TK/4
+'''No. of ticks per quater note divission'''
+SUBDIV = TK/2
+'''No. of ticks per 16th note subdivision'''
 global ticks
 _ticks = int(mido.second2tick(15/(2*_bpm),TK,_tempo))
+
+
 KEY = 0
 
 internalMidi = mido.open_output('IAC Driver Bus 1')
+'''Midi Bus to output midi stream to'''
 
 noteDict = {0:60,
             1:62,

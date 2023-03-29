@@ -7,7 +7,12 @@ import tkinter
 from tkinter import *
 
 POPULATIONSIZE = 5
+'''No of individuals for training'''
+
 LENGTH = 2
+'''Phrases per genome'''
+
+
 trainingcycles = 5
 individual = 0
 parentPool = 0
@@ -73,6 +78,7 @@ def __main__():
         return
     
     def failIndividual():
+        '''does not add indiviual to parent pool'''
         global individual
         population[individual].Fitness = 0
         individual += 1

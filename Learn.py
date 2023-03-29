@@ -1,6 +1,7 @@
 import Genome
 
 class FitnessModel:
+    '''Used as a formula by which top synthesize new trained genomes'''
     def __init__(self,dimensions: tuple):
         self.Phrases = ['' for i in range(dimensions[0])]
         self.Measures = ['' for i in range(dimensions[1])]

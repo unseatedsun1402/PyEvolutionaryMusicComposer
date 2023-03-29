@@ -41,33 +41,19 @@ class Genome:
         return [gFeatures,pFeatures]
 
     def repitition(self):
+        sequence = []
         for phrase in self.Phrase:
+            notes = 0
             for measure in phrase.Measure:
-                Bar = []
+                subsequence = []
                 for note in measure.Bar:
-                    if note.type == "note":
-                        Bar.append((note.type,note.length,note.note))
-                    else:
-                        Bar.append((note.type,note.length))
-                repeated = False
-                for each in self.Motif:
-                    if Bar in self.Motif:
-                        repeated = True
-                    else:
-                        self.Repitition += 1/(len(self.Phrase)*self.dimensions[0])
-                
-                notes = []
-                for note in measure.Bar:
-                    if note.type == "note":
-                        notes.append(note.note)
-                try:
-                    grad = numpy.gradient(numpy.array(notes))
-                    for i in grad:
-                        if i > 4 or i < -4:
-                            return
-                    self.Motif.append(copy.copy(measure))
-                except Exception as e:
-                    print(e)
+                    notes += 1
+                    subsequence.append(note.note)
+                    if len(subsequence) > 1:
+                        if set(subsequence).issubset(sequence):
+                            self.Repitition += 1
+                    sequence.append(note.note)
+            self.Repitition = self.Repitition / notes
                 
 
     def genome2midi(self) -> mido.MidiTrack:
@@ -81,19 +67,22 @@ class Genome:
     
     def motion(self):
         '''gets the conjunct motion percentage of the genome'''
-        conjunct = 0
+        motion = []
         for phrase in self.Phrase:
-            mconjunct = 0
+            motion.append(phrase.Motion)
             for measure in phrase.Measure:
                 try:
-                    c,d = measure.Motion
+                    c = measure.Motion
                 except AttributeError:
                     measure._motion()
-                    c,d = measure.Motion
-                mconjunct += c
-            phrase.motionRatio = mconjunct/len(measure.Bar)
-            conjunct += phrase.motionRatio
-        self.motionRatio = conjunct/2
+                    c = measure.Motion
+        
+        i = 0
+        for each in motion:
+            i += each
+        avgmmotion = i/len(motion)
+        self.Motion = motion
+        self.AvgMotion = avgmmotion
 
 ###################################################
 #               Phrase Class
@@ -160,7 +149,12 @@ class Phrase:
         self._repitition()
     
     def _motion(self):
-        pass
+        motion = []
+        for measure in self.Measure:
+            motion.append(measure.Motion)
+        
+        self.Motion = motion
+        
 
     def _repitition(self):
         sequence = []
@@ -169,11 +163,11 @@ class Phrase:
             subsequence = []
             for note in measure.Bar:
                 notes += 1
-                sequence.append(note.note)
                 subsequence.append(note.note)
                 if len(subsequence) > 1:
                     if set(subsequence).issubset(sequence):
                         self.repitition += 1
+                sequence.append(note.note)
         self.repitition = self.repitition / notes
 
 
@@ -328,7 +322,7 @@ class Measure:
                 conjunct += 1/len(notes)
             else:
                 disjunct += 1/len(notes)
-        self.Motion = (conjunct,disjunct)
+        self.Motion = conjunct
 
 ###################################################
 #               Subdivision Class
