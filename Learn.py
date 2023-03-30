@@ -1,5 +1,4 @@
 from Genome import *
-import Listen
 
 class FitnessModel:
     '''Used as a formula by which top synthesize new trained genomes'''
@@ -48,14 +47,13 @@ class FitnessModel:
                             continue
                         motion = random.random()
                         if motion < measuremotion:
-                            steps = random.random()
-                            if steps < 0.5:
-                                if note.note == 15:
-                                    note = note.note + 1
-                                else:
-                                    note = note.note + random.randint(-1,0)
+                            if note.note == 15:
+                                note = note.note + random.randint(-1,0)
+                            elif note.note == 0:
+                                note = note.note + random.randint(0,1)
                             else:
-                                note = note.note - 1
+                                note = note.note + random.randint(-1,1)
+                    
                             bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
                         else:
                             leap = leapRange(bar)
@@ -104,10 +102,9 @@ class FitnessModel:
                         subdivisions -= bar[len(bar)-1].length
                         if subdivisions < 0:
                             bar[len(bar)-1].length += subdivisions
-
-
-    
                 measure.Bar=bar
+            
+        return individual
 
     def analyseIndividual(self,individual: Genome):
         pass
@@ -175,7 +172,7 @@ class FitnessModel:
     def predictFitness():
         pass
 
-def leapRange(bar: list):
+'''def leapRange(bar: list):
     if not len(bar) == 0:
         lastnote = bar[len(bar)-1].note
 
@@ -205,7 +202,7 @@ def leapRange(bar: list):
                 leap = random.randint(2,up)
             else:
                 leap = random.randint(-7,-2)
-            return leap
+            return leap'''
 
 
     

@@ -41,7 +41,7 @@ noteDict = {0:60,
             15:86
             }
 
-def playSequence(genome: Genome.Genome):    
+def playSequence(genome: Genome):    
     """Plays back the midi sequence to the internal midi bus or synth"""
     with mido.open_output('IAC Driver Bus 1') as internalMidi:
         for phrase in genome.Phrase:

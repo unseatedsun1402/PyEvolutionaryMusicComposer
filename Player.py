@@ -189,7 +189,7 @@ def testAlgorithm():
 
     testScreen = Tk()
     option1 = Button(testScreen,text='Option 1',command=lambda:Listen.playSequence(synthesized))
-    option2 = Button(testScreen,text = 'Option 2',command=lambda:Listen.playSequence(synthesized))
+    option2 = Button(testScreen,text = 'Option 2',command=lambda:Listen.playSequence(control))
     option1.pack()
     option2.pack()
 

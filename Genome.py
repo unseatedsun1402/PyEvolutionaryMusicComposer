@@ -3,7 +3,6 @@ import mido
 from mido import *
 import numpy
 import copy
-from Learn import leapRange
 
 
 tonicChord = {'one': [0,5,7],
@@ -224,13 +223,13 @@ class Measure:
                 motion = random.random()
                 if motion < measuremotion:
                     steps = random.random()
-                    if steps < 0.5:
-                        if note.note == 15:
-                            note = note.note + 1
-                        else:
-                            note = note.note + random.randint(-1,0)
+                    if note.note == 15:
+                        note = note.note + random.randint(-1,0)
+                    elif note.note == 0:
+                        note = note.note + random.randint(0,1)
                     else:
-                        note = note.note - 1
+                        note = note.note + random.randint(-1,1)
+                    
                     bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
                 else:
                     leap = leapRange(bar)
@@ -442,5 +441,35 @@ def sythesizedNewComposition(**kwargs):
                     bar.append(note)
     return composition
             
+def leapRange(bar: list):
+    if not len(bar) == 0:
+        lastnote = bar[len(bar)-1].note
 
+        if lastnote < 2:
+            leap = random.randint(2,7)
+            return leap
+        elif lastnote < 7:
+            low = lastnote - 2
+            leap = random.randint(2,7)
+            if random.random()>0.5:
+                if low == 0:
+                    leap = -2
+                else:
+                    leap = random.randint(-2-low,-2)
+            return leap
+        elif lastnote < 9:
+            leap = random.randint(2,7)
+            if random.random() > 0.5:
+                leap = 0-leap
+            return leap
+        elif lastnote > 13:
+            leap = random.randint(-7,-2)
+            return leap
+        else:
+            up = 15-lastnote
+            if random.random()>0.5:
+                leap = random.randint(2,up)
+            else:
+                leap = random.randint(-7,-2)
+            return leap
             
