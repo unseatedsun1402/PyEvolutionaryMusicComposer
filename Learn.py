@@ -148,13 +148,6 @@ class FitnessModel:
                    6:self.contextMtnPhrase,
                    7:self.mMtnAvg}
         
-        '''self.generateIndividual(length=2,
-                   genomeRep=self.gRepAvg,genomeMtn=self.gMtnAvg,
-                   phraseRep=self.pRepAvg,
-                   phraseMtn=self.pMtnAvg,
-                   repContext=self.contextRepPhrase,
-                   mtnContext=self.contextMtnPhrase,
-                   measureAvg=self.mMtnAvg)'''
         return results
 
     def analysePopulation(self,population):#add totals together, take average, compare prediction to next round of fittest individuals and recalculate
