@@ -3,6 +3,7 @@ import mido
 from mido import *
 import numpy
 import copy
+from Learn import leapRange
 
 
 tonicChord = {'one': [0,5,7],
@@ -202,48 +203,84 @@ class Measure:
         
 
     def generateMeasure(self, **kwargs):
-        subdivisions = 0
-        if kwargs["start"]:                     #starting bar must contain a note from tonic chord
+        start = kwargs['start']
+        if not start:
+            measuremotion = random.random()
+            subdivisions = 0
+            bar = []
             for each in self.Bar:
                 subdivisions += each.length
             
-            count = 0
-            measure = []
             while subdivisions > 0:
-                measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
-                if subdivisions == 6:
-                    measure[len(measure)-1].velocity = 100
-                subdivisions -= measure[count].length
-                if subdivisions < 0:
-                    measure[count].length = measure[count].length + subdivisions
-                count +=1
-
-            condition = False
-            for each in measure:
-                if not each.note in tonicChord['one']:
-                    continue
+                if len(bar) > 0:
+                    note = bar[len(bar)-1]
                 else:
-                    condition = True
-            if not condition:
-                self.Bar[0].note=0
-            
-        
-        else:                                   #requirement waved for specific note appearences
+                    note = Note(length=random.randint(1,4),type='note',note=random.randint(0,15))
+                    bar.append(note)
+                    subdivisions -= bar[0].length
+                    if random.random()>0.1:
+                        note.type = 'pause'
+                    continue
+                motion = random.random()
+                if motion < measuremotion:
+                    steps = random.random()
+                    if steps < 0.5:
+                        if note.note == 15:
+                            note = note.note + 1
+                        else:
+                            note = note.note + random.randint(-1,0)
+                    else:
+                        note = note.note - 1
+                    bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
+                else:
+                    leap = leapRange(bar)
+                    bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                subdivisions -= bar[len(bar)-1].length
+                if subdivisions < 0:
+                    bar[len(bar)-1].length += subdivisions
+                    
+                for each in bar:
+                    if not each.note in [0,3,5]:
+                        pass
+                    else:
+                        start = False
+                        break
+        else:
+            measuremotion = random.random()
+            subdivisions = 0
+            bar = []
             for each in self.Bar:
                 subdivisions += each.length
             
-            count = 0
-            measure = []
             while subdivisions > 0:
-                measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
-                if subdivisions ==6:
-                    measure[len(measure)-1].velocity = 100
-                subdivisions -= measure[count].length
+                if len(bar) > 0:
+                    note = bar[len(bar)-1]
+                else:
+                    note = Note(length=random.randint(1,4),type='note',note=random.randint(0,15))
+                    bar.append(note)
+                    subdivisions -= bar[0].length
+                    if random.random()>0.1:
+                        note.type = 'pause'
+                    continue
+                motion = random.random()
+                if motion < measuremotion:
+                    steps = random.random()
+                    if steps < 0.5:
+                        if note.note == 15:
+                            note = note.note + 1
+                        else:
+                            note = note.note + random.randint(-1,0)
+                    else:
+                        note = note.note - 1
+                    bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
+                else:
+                    leap = leapRange(bar)
+                    bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                subdivisions -= bar[len(bar)-1].length
                 if subdivisions < 0:
-                    measure[count].length = measure[count].length + subdivisions
-                count +=1
-
-        self.Bar = measure
+                    bar[len(bar)-1].length += subdivisions
+        
+        self.Bar=bar
 
     def Closing(self):
         subdivisions = 0                #starting bar must contain a note from tonic chord

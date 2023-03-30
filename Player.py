@@ -67,10 +67,12 @@ def __main__():
         if individual == len(population):
             if Mutation.crossover(population):
                 print('Success')
+                fitnessModel.analysePopulation(population)
                 global trainingcycles
                 trainingcycles -= 1
                 if trainingcycles == 0:
-                    testAlgorithm()                
+                    testAlgorithm()
+                    return                
 
             individual = 0
             parentPool = 0
@@ -86,10 +88,12 @@ def __main__():
         if individual == len(population):
             if Mutation.crossover(population):
                 print('Success')
+                fitnessModel.analysePopulation(population)
                 global trainingcycles
                 trainingcycles -= 1
                 if trainingcycles == 0:
-                    testAlgorithm()  
+                    testAlgorithm()
+                    return 
 
             individual = 0
             global parentPool
@@ -162,8 +166,32 @@ def __main__():
     root.mainloop()
 
 def testAlgorithm():
-    print(fitnessModel.analysePopulation(population))
-    #synthesised = Genome.synthesisedNewComposition(population[0].get_features())
+    results = (fitnessModel.analysePopulation(population))
+    print(results)
+    synthesized = fitnessModel.generateIndividual(length=LENGTH,genomeRep=results[1],genomeMtn=results[2],phraseRep=results[3],phraseMtn=results[4],repContext=results[5],mtnContext=results[6],measureMtn=results[7])
+    control = Genome(length=LENGTH)
+    for phrase in control.Phrase:
+        start = True
+        for measure in phrase.Measure:
+            if start:
+                measure.generateMeasure(start = True)
+                start = False
+            else:
+                measure.generateMeasure(start = False)
+            measure._shape()
+        phrase.Measure[len(phrase.Measure)-1].Closing()
+
+        phrase._shape()
+    genome.repitition()
+
+    global root
+    root.destroy()
+
+    testScreen = Tk()
+    option1 = Button(testScreen,text='Option 1',command=lambda:Listen.playSequence(synthesized))
+    option2 = Button(testScreen,text = 'Option 2',command=lambda:Listen.playSequence(synthesized))
+    option1.pack()
+    option2.pack()
 
 
 

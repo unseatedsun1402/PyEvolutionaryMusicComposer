@@ -1,6 +1,7 @@
 from Genome import *
 import random
 import copy
+from Learn import *
 
 Motif = []
 

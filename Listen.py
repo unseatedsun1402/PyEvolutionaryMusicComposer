@@ -55,9 +55,13 @@ def playSequence(genome: Genome.Genome):
                     if noteObj.type == "pause":
                         time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
                     else:
-                        internalMidi.send(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=0))
-                        time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
-                        internalMidi.send(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
+                        try:
+                            internalMidi.send(mido.Message("note_on",note=noteDict[noteObj.note],velocity=noteObj.velocity,time=0))
+                            time.sleep(mido.tick2second(noteObj.length*SUBDIV,TK,_tempo))
+                            internalMidi.send(mido.Message("note_off", note = noteDict[noteObj.note], velocity = noteObj.velocity, time = noteObj.length*SUBDIV))
+                        except KeyError as k:
+                            print(k)
+                            print(noteObj)
                 for i in harmony:
                     internalMidi.send(mido.Message("note_off",note = noteDict[i]-12,velocity = 40, time = 0))
         internalMidi.panic()

@@ -23,45 +23,93 @@ class FitnessModel:
         self.Model = []
     
     def generateIndividual(self, **kwargs):
-        individual = Genome(kwargs['length'])
+        length = kwargs['length']
+        individual = Genome(length=length)
+        start = False
         for phrase in individual.Phrase:
-            
             count = 0
             for measure in phrase.Measure:
-                measuremotion =kwargs['mtnContext'][count]
-                subdivisions = 0
-                for each in measure.Bar:
-                    subdivisions += each.length
-                
-                while subdivisions > 0:
-                    if len(measure.Bar) > 0:
-                        note = measure.Bar[len(measure.Bar)-1]
-                    motion = random.random()
-                    if motion < measuremotion:
-                        steps = random.Random()
-                        if steps < 0.5:
-                            note = note + 1
+                if not start:
+                    measuremotion =kwargs['mtnContext'][count]
+                    subdivisions = 0
+                    bar = []
+                    for each in measure.Bar:
+                        subdivisions += each.length
+                    
+                    while subdivisions > 0:
+                        if len(bar) > 0:
+                            note = bar[len(bar)-1]
                         else:
-                            note = note - 1
-                        measure.Bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
-                    else:
-                        leap = leapRange(measure)
-                        measure.Bar.append(Note(type='note',note=note+leap,length=random.randint(1,4)))
-                    subdivisions -= measure.Bar[len(measure.Bar)-1]
-                    if subdivisions < 0:
-                        measure.Bar[len(measure.Bar)-1].length += subdivisions
-    
-        Listen.playSequence(individual)
+                            note = Note(length=random.randint(1,4),type='note',note=random.randint(0,15))
+                            bar.append(note)
+                            subdivisions -= bar[0].length
+                            if random.random()>0.1:
+                                note.type = 'pause'
+                            continue
+                        motion = random.random()
+                        if motion < measuremotion:
+                            steps = random.random()
+                            if steps < 0.5:
+                                if note.note == 15:
+                                    note = note.note + 1
+                                else:
+                                    note = note.note + random.randint(-1,0)
+                            else:
+                                note = note.note - 1
+                            bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
+                        else:
+                            leap = leapRange(bar)
+                            bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                        subdivisions -= bar[len(bar)-1].length
+                        if subdivisions < 0:
+                            bar[len(bar)-1].length += subdivisions
+                            
+                        for each in bar:
+                            if not each.note in [0,3,5]:
+                                pass
+                            else:
+                                start = False
+                                break
+                else:
+                    measuremotion =kwargs['mtnContext'][count]
+                    subdivisions = 0
+                    bar = []
+                    for each in measure.Bar:
+                        subdivisions += each.length
+                    
+                    while subdivisions > 0:
+                        if len(bar) > 0:
+                            note = bar[len(bar)-1]
+                        else:
+                            note = Note(length=random.randint(1,4),type='note',note=random.randint(0,15))
+                            bar.append(note)
+                            subdivisions -= bar[0].length
+                            if random.random()>0.1:
+                                note.type = 'pause'
+                            continue
+                        motion = random.random()
+                        if motion < measuremotion:
+                            steps = random.random()
+                            if steps < 0.5:
+                                if note.note == 15:
+                                    note = note.note + 1
+                                else:
+                                    note = note.note + random.randint(-1,0)
+                            else:
+                                note = note.note - 1
+                            bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
+                        else:
+                            leap = leapRange(bar)
+                            bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                        subdivisions -= bar[len(bar)-1].length
+                        if subdivisions < 0:
+                            bar[len(bar)-1].length += subdivisions
 
+
+    
+                measure.Bar=bar
 
     def analyseIndividual(self,individual: Genome):
-        '''if self.init == False:
-            for i in range(len(individual.Phrase)):
-                each = individual.Phrase[i]
-                self.Phrases[i]([each.shape,each.motionRatio,each.repitition])
-                for j in range(len(each.Measure)):
-                    measure = each.Measure[j] 
-                    self.Measures[j]=[measure.shape, measure.Motion]'''
         pass
     
     def analyseGenome(self,individual: Genome):
@@ -94,15 +142,22 @@ class FitnessModel:
         if self.init == 0:
             self.init = 1
 
-        results = {'length':population[0].length,
-                   'genomeRep':self.gRepAvg,'genomeMtn':self.gMtnAvg,
-                   'phraseRep':self.pRepAvg,
-                   'phraseMtn':self.pMtnAvg,
-                   'repContext':self.contextRepPhrase,
-                   'mtnContext':self.contextMtnPhrase,
-                   'measureAvg':self.mMtnAvg}
+        results = {0:population[0].length,
+                   1:self.gRepAvg,
+                   2:self.gMtnAvg,
+                   3:self.pRepAvg,
+                   4:self.pMtnAvg,
+                   5:self.contextRepPhrase,
+                   6:self.contextMtnPhrase,
+                   7:self.mMtnAvg}
         
-        self.generateIndividual(results)
+        '''self.generateIndividual(length=2,
+                   genomeRep=self.gRepAvg,genomeMtn=self.gMtnAvg,
+                   phraseRep=self.pRepAvg,
+                   phraseMtn=self.pMtnAvg,
+                   repContext=self.contextRepPhrase,
+                   mtnContext=self.contextMtnPhrase,
+                   measureAvg=self.mMtnAvg)'''
         return results
 
     def analysePopulation(self,population):#add totals together, take average, compare prediction to next round of fittest individuals and recalculate
@@ -120,19 +175,21 @@ class FitnessModel:
     def predictFitness():
         pass
 
-def leapRange(measure: Measure):
-    if not len(measure.Bar) == 0:
-        lastnote = measure.Bar[len(measure.Bar)-1].note
+def leapRange(bar: list):
+    if not len(bar) == 0:
+        lastnote = bar[len(bar)-1].note
 
         if lastnote < 2:
             leap = random.randint(2,7)
             return leap
         elif lastnote < 7:
-            low = 7 - lastnote
+            low = lastnote - 2
+            leap = random.randint(2,7)
             if random.random()>0.5:
-                leap = random.randint(-2,-low)
-            else:
-                leap = random.randint(2,7)
+                if low == 0:
+                    leap = -2
+                else:
+                    leap = random.randint(-2-low,-2)
             return leap
         elif lastnote < 9:
             leap = random.randint(2,7)
@@ -140,14 +197,14 @@ def leapRange(measure: Measure):
                 leap = 0-leap
             return leap
         elif lastnote > 13:
-            leap = random.randint(-2,-7)
+            leap = random.randint(-7,-2)
             return leap
         else:
             up = 15-lastnote
             if random.random()>0.5:
                 leap = random.randint(2,up)
             else:
-                leap = random.randint(-2,-7)
+                leap = random.randint(-7,-2)
             return leap
 
 
