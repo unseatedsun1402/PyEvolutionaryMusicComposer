@@ -1,7 +1,5 @@
 from Genome import *
-import Mutation
-import Listen
-import Export
+import Mutation, Listen, Learn, Export
 from functools import partial
 import tkinter
 from tkinter import *
@@ -34,6 +32,9 @@ for genome in population:
 
         phrase._shape()
     genome.repitition()
+
+fitnessModel = Learn.FitnessModel(population[0].length)
+fitnessModel.analyseIndividual(population[0])
 
 
 ############## Visual Interface #################
@@ -161,11 +162,8 @@ def __main__():
     root.mainloop()
 
 def testAlgorithm():
-    '''global root
-    root.destroy()
-    testWindow = Tk()'''
-    #testWindow.geometry(400,200)
-    synthesised = Genome.synthesisedNewComposition(population[0].get_features())
+    print(fitnessModel.analysePopulation(population))
+    #synthesised = Genome.synthesisedNewComposition(population[0].get_features())
 
 
 

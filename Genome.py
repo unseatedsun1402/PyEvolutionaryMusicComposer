@@ -28,8 +28,15 @@ class Genome:
         self.Phrase = [Phrase(self.dimensions) for  phr in range(self.length)]
         '''container for Phrase objects'''
         self.Motif = []
+        '''container for desireable motifs'''
         self.Repitition = 0
+        '''repitition score'''
         self.Fitness = int
+        '''Fitness score'''
+        self.Motion = 0
+        '''motion score'''
+        self.AvgMotion = 0
+        ''' average motion score'''
 
     def _shape(self):
         pass
@@ -54,6 +61,7 @@ class Genome:
                             self.Repitition += 1
                     sequence.append(note.note)
             self.Repitition = self.Repitition / notes
+            self.motion()
                 
 
     def genome2midi(self) -> mido.MidiTrack:
@@ -68,19 +76,13 @@ class Genome:
     def motion(self):
         '''gets the conjunct motion percentage of the genome'''
         motion = []
+        avgmmotion = 0
         for phrase in self.Phrase:
-            motion.append(phrase.MotionAvg)
-            for measure in phrase.Measure:
-                try:
-                    c = measure.Motion
-                except AttributeError:
-                    measure._motion()
-                    c = measure.Motion
+            avgmmotion += phrase.MotionAvg
+            motion.append(phrase.Motion)
         
-        i = 0
-        for each in motion:
-            i += each
-        avgmmotion = i/len(motion)
+        
+        avgmmotion = avgmmotion/self.length
         self.Motion = motion
         self.AvgMotion = avgmmotion
 
@@ -96,7 +98,7 @@ class Phrase:
 
         self.Measure = [Measure(key='C',subdiv=self.subdivisions) for i in range(self.measures)]
         '''container for Measure objects'''
-        self.Motion = 0
+        self.Motion = []
         '''list of the percentage measures are made up of conjunct motion'''
         self.MotionAvg = 0
         '''percentage of the phrase made up of conjunct motion'''
@@ -209,7 +211,7 @@ class Measure:
             measure = []
             while subdivisions > 0:
                 measure.append(Note(length=random.randint(1,8),note=random.randint(0,15),type="note"))
-                if subdivisions ==6:
+                if subdivisions == 6:
                     measure[len(measure)-1].velocity = 100
                 subdivisions -= measure[count].length
                 if subdivisions < 0:
