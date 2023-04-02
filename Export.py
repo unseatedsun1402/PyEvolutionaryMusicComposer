@@ -35,6 +35,10 @@ def as_midi(genome: Genome, **kwargs):
     melodyTrk = mido.MidiTrack()
     metaTsg = mido.MetaMessage('time_signature', numerator=4, denominator=4, clocks_per_click=24, notated_32nd_notes_per_beat=8,time=0)
     metaTmp = mido.MetaMessage('set_tempo',tempo = _tempo, time = 0)
+    try:
+        title = kwargs["title"]
+    except KeyError:
+        title = None
     melodyTrk.append(metaTsg)
     melodyTrk.append(metaTmp)
     
@@ -43,7 +47,7 @@ def as_midi(genome: Genome, **kwargs):
         for phrase in genome.Phrase:
             #print(phrase.shape)
             for measure in phrase.Measure:
-                print(measure.shape)
+                #print(measure.shape)
                 length = 0
                 harmony = Harmonize.harmonize(measure)
                 for i in harmony:
@@ -80,7 +84,10 @@ def as_midi(genome: Genome, **kwargs):
     except ReferenceError:
         pass
     try:
-        filename = fd.asksaveasfilename()
+        if not title == None:
+            filename = title
+        else:
+            filename = fd.asksaveasfilename()
         if not filename[:3] == ".mid":
             filename += ".mid"
         file.save(filename)

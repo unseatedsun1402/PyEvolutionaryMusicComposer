@@ -220,11 +220,17 @@ def testAlgorithm():
     global root
     root.destroy()
 
+    def SaveOutcome():
+        Export.as_midi(synthesized,harmony=True,title='synthesized')
+        Export.as_midi(control,harmony=True,title='control')
+
     testScreen = Tk()
     option1 = Button(testScreen,text='Option 1',command=lambda:Listen.playSequence(synthesized))
     option2 = Button(testScreen,text = 'Option 2',command=lambda:Listen.playSequence(control))
+    save = Button(testScreen,text='Save',command=lambda:SaveOutcome())
     option1.pack()
     option2.pack()
+    save.pack()
 
 
 
