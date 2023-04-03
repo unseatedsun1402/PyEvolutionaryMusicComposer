@@ -87,14 +87,16 @@ class FitnessModel:
                             continue
                         motion = random.random()
                         if motion < measuremotion:
-                            steps = random.random()
-                            if steps < 0.5:
-                                if note.note == 15:
-                                    note = note.note + 1
-                                else:
-                                    note = note.note + random.randint(-1,0)
+                            if note.note == 15:
+                                note = note.note + random.randint(-1,0)
+                            elif note.note == 0:
+                                note = note.note + random.randint(0,1)
                             else:
-                                note = note.note - 1
+                                note = note.note + random.randint(-1,1)
+                            if note < 0:
+                                note = 0
+                            elif note > 15:
+                                note = 15
                             bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
                         else:
                             leap = leapRange(bar)

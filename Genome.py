@@ -234,6 +234,7 @@ class Measure:
                 else:
                     leap = leapRange(bar)
                     bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                
                 subdivisions -= bar[len(bar)-1].length
                 if subdivisions < 0:
                     bar[len(bar)-1].length += subdivisions
@@ -264,17 +265,18 @@ class Measure:
                 motion = random.random()
                 if motion < measuremotion:
                     steps = random.random()
-                    if steps < 0.5:
-                        if note.note == 15:
-                            note = note.note + 1
-                        else:
-                            note = note.note + random.randint(-1,0)
+                    if note.note == 15:
+                        note = note.note + random.randint(-1,0)
+                    elif note.note == 0:
+                        note = note.note + random.randint(0,1)
                     else:
-                        note = note.note - 1
+                        note = note.note + random.randint(-1,1)
                     bar.append(Note(type = 'note',note = note, length = random.randint(1,4)))
                 else:
                     leap = leapRange(bar)
                     bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
+                if bar[len(bar)-1].note < 0 or bar[len(bar)-1].note > 15:
+                    print('oops')
                 subdivisions -= bar[len(bar)-1].length
                 if subdivisions < 0:
                     bar[len(bar)-1].length += subdivisions
