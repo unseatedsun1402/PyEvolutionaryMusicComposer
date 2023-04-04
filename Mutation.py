@@ -6,11 +6,12 @@ from Learn import *
 Motif = []
 
 def crossover(population):
+    '''performs crossover operations on two genomes'''
     sorted = sortPopulation(copy.copy(population))
     fittest = len(sorted)//3
     pool = []
     for each in sorted:
-        if each.Fitness == 1:
+        if not each.Fitness == 0:
             pool.append(each)
     
     if len(pool) < 2:
@@ -56,13 +57,20 @@ def crossover(population):
     for individual in range(fittest,len(population)):
         population[individual] = copy.copy(sorted[individual])
     
-    shuffle(population)
+    shuffle(population) #changes the order of individuals in the population
     return(True)
             
 
 def mutation(self: Measure):
-    if len(Motif) > 1:
-        self = Motif[random.randint(0,len(Motif)-1)]
+
+    repetition = random.random()
+    if repetition > 0.9:
+        if len(Motif) > 1:
+            self = Motif[random.randint(0,len(Motif)-1)]
+        else:
+            for each in self.Bar:
+                if each.type == "note":
+                    each.note = random.randint(0,15)
 
     else:
         for each in self.Bar:

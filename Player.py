@@ -84,7 +84,7 @@ def __main__():
         '''Assigns a possible pass to the fitness score'''
         global individual
         if random.random() > 0.5:
-            population[individual].Fitness = 1 
+            population[individual].Fitness = 0.5 
             global parentPool
             parentPool += 1
         else:
@@ -236,5 +236,7 @@ def testAlgorithm():
 
 
 if __name__ == '__main__':
+    '''Runs gui when program ran as a standalone script rather than imported as a library'''
     individual = 0
+    
     __main__()
