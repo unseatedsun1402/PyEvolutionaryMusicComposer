@@ -275,8 +275,6 @@ class Measure:
                 else:
                     leap = leapRange(bar)
                     bar.append(Note(type='note',note=note.note+leap,length=random.randint(1,4)))
-                if bar[len(bar)-1].note < 0 or bar[len(bar)-1].note > 15:
-                    print('oops')
                 subdivisions -= bar[len(bar)-1].length
                 if subdivisions < 0:
                     bar[len(bar)-1].length += subdivisions
