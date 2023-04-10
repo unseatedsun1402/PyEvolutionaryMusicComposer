@@ -186,7 +186,7 @@ class Phrase:
 #                  Measure Class
 ###################################################
 class Measure:
-    '''third structure containing 8 subdivisions'''
+    '''third level structure containing 8 subdivisions'''
     def __init__(self,**kwargs):
         self.subdiv = kwargs["subdiv"]
         '''no. of subdivisions'''
