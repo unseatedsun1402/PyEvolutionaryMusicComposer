@@ -44,6 +44,8 @@ def as_midi(genome: Genome, **kwargs):
     
     if kwargs["harmony"]:
         harmonyTrk = mido.MidiTrack()
+        harmonyTrk.append(metaTsg)
+        harmonyTrk.append(metaTmp)
         for phrase in genome.Phrase:
             #print(phrase.shape)
             for measure in phrase.Measure:
