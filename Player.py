@@ -199,6 +199,7 @@ def __main__():
     root.mainloop()
 
 def testAlgorithm():
+    '''Tests the sythesised sequence against the control'''
     results = (fitnessModel.analysePopulation(population))
     print(results)
     synthesized = fitnessModel.generateIndividual(length=LENGTH,genomeRep=results[1],genomeMtn=results[2],phraseRep=results[3],phraseMtn=results[4],repContext=results[5],mtnContext=results[6],measureMtn=results[7])
